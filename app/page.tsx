@@ -1,19 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Image from "next/image"
 
 export default function Page() {
-  const [isMobile, setIsMobile] = useState(false)
-
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768)
-    }
-
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-
+    // Smooth scroll for anchor links
     const handleNavClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
       if (target.tagName === "A" && target.getAttribute("href")?.startsWith("#")) {
@@ -28,36 +20,24 @@ export default function Page() {
 
     document.addEventListener("click", handleNavClick)
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (window.innerWidth > 768) {
-        const amount = 10
-        const x = (e.clientX / window.innerWidth - 0.5) * amount
-        const y = (e.clientY / window.innerHeight - 0.5) * amount
-
-        document.querySelectorAll(".project-image").forEach((img) => {
-          if ((img as HTMLElement).parentElement?.matches(":hover")) {
-            ;(img as HTMLElement).style.transform = `scale(1.1) translate(${x}px, ${y}px)`
-          }
-        })
-      }
-    }
-
-    document.addEventListener("mousemove", handleMouseMove)
-
-    // Add distortion class to titles on hover for more glitchy feel
+    // Title distortion effect
     const titles = document.querySelectorAll(".project-title")
+    const titleHandlers: { el: Element; enter: () => void; leave: () => void }[] = []
+
     titles.forEach((title) => {
       const handleEnter = () => title.classList.add("distort-active")
       const handleLeave = () => title.classList.remove("distort-active")
-
       title.addEventListener("mouseenter", handleEnter)
       title.addEventListener("mouseleave", handleLeave)
+      titleHandlers.push({ el: title, enter: handleEnter, leave: handleLeave })
     })
 
     return () => {
-      window.removeEventListener("resize", checkMobile)
       document.removeEventListener("click", handleNavClick)
-      document.removeEventListener("mousemove", handleMouseMove)
+      titleHandlers.forEach(({ el, enter, leave }) => {
+        el.removeEventListener("mouseenter", enter)
+        el.removeEventListener("mouseleave", leave)
+      })
     }
   }, [])
 
@@ -400,7 +380,7 @@ export default function Page() {
         </section>
 
         {/* Footer */}
-        <footer id="contact">
+        <footer id="contact" className="footer">
           <div className="footer-grid">
             <div>
               <div className="footer-cta">
@@ -423,8 +403,8 @@ export default function Page() {
                 </li>
               </ul>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <ul className="social-list" style={{ textAlign: "right" }}>
+            <div className="social-list text-right">
+              <ul>
                 <li>tomatodesign2025@163.com</li>
                 <li>Tomato9467</li>
                 <li>
@@ -438,38 +418,7 @@ export default function Page() {
       </div>
 
       {/* Background Accents */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          pointerEvents: "none",
-          zIndex: -1,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "10%",
-            left: "5%",
-            width: "2px",
-            height: "80vh",
-            background: "rgba(0,0,0,0.05)",
-          }}
-        ></div>
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: 0,
-            width: "100vw",
-            height: "1px",
-            background: "rgba(0,0,0,0.05)",
-          }}
-        ></div>
-      </div>
+      <div className="bg-accents"></div>
     </>
   )
 }
