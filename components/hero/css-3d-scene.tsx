@@ -20,6 +20,9 @@ const DAMPING = 0.94
 const MAX_SPEED = 11
 const EDGE_PAD = 200
 const HALF_Z = 300
+const XY_BOUNDARY_K = 0.06
+const Z_BOUNDARY_K = 0.15
+const Z_INDEX_BASE = 100
 
 const ORBIT_CW_K = 0.05
 const Z_FLOW = 0.05
@@ -43,6 +46,8 @@ const SWIRL_KICK = 14
 const SWIRL_FALLOFF = 250
 const STIR_PULL = 0.004
 const STIR_DURATION_MS = 2000
+const TILT_EASE_K = 0.08
+const TILT_DEADBAND = 0.01
 
 interface Vec3 { x: number; y: number; z: number }
 interface Vec2 { x: number; y: number }
@@ -63,6 +68,12 @@ interface State {
   lastZ: number
 }
 type Mode = "idle" | "stir"
+
+function clampAxis(val: number, velRef: Vec3, axis: "x" | "y" | "z", halfRange: number, k: number) {
+  if (val > halfRange) { velRef[axis] -= (val - halfRange) * k; return halfRange }
+  if (val < -halfRange) { velRef[axis] -= (val + halfRange) * k; return -halfRange }
+  return val
+}
 
 export function Css3dScene() {
   const sceneRef = useRef<HTMLDivElement>(null)
@@ -105,7 +116,7 @@ export function Css3dScene() {
         wobbleY: Math.random() * Math.PI * 2,
         wobbleZ: Math.random() * Math.PI * 2,
         rotPhaseZ: Math.random() * Math.PI * 2,
-        lastZ: Math.round(100 + initZ),
+        lastZ: Math.round(Z_INDEX_BASE + initZ),
       }
     })
 
@@ -119,12 +130,15 @@ export function Css3dScene() {
     const paintAll = () => {
       for (const s of statesRef.current) {
         if (!s.el) continue
+        const px = Math.round(s.pos.x)
+        const py = Math.round(s.pos.y)
+        const pz = Math.round(s.pos.z)
         s.el.style.transform =
-          `translate(-50%, -50%) translate3d(${s.pos.x.toFixed(2)}px, ${s.pos.y.toFixed(2)}px, ${s.pos.z.toFixed(2)}px) rotate(${s.rot.toFixed(2)}deg)`
+          `translate(-50%, -50%) translate3d(${px}px, ${py}px, ${pz}px) rotate(${Math.round(s.rot)}deg)`
         // zIndex only needs an integer change — skip the style write when
         // the rounded value hasn't moved, otherwise we invalidate style on
         // 6 elements every frame for a property that rarely changes.
-        const z = Math.round(100 + s.pos.z)
+        const z = Z_INDEX_BASE + Math.round(s.pos.z)
         if (z !== s.lastZ) {
           s.el.style.zIndex = String(z)
           s.lastZ = z
@@ -138,14 +152,17 @@ export function Css3dScene() {
     }
 
     // Cached scene rect — refreshed on resize so the per-event listeners
-    // (mousemove, click) can do rect math without forcing layout.
-    const dims = { w: scene.clientWidth, h: scene.clientHeight, left: 0, top: 0 }
+    // (mousemove, click) can do rect math without forcing layout. halfW/halfH
+    // are precomputed because the rAF loop reads them 6×/frame.
+    const dims = { w: 0, h: 0, left: 0, top: 0, halfW: 0, halfH: 0 }
     const refreshRect = () => {
       const r = scene.getBoundingClientRect()
       dims.w = r.width
       dims.h = r.height
       dims.left = r.left
       dims.top = r.top
+      dims.halfW = r.width / 2 - EDGE_PAD
+      dims.halfH = r.height / 2 - EDGE_PAD
     }
     const ro = new ResizeObserver(refreshRect)
     ro.observe(scene)
@@ -173,14 +190,13 @@ export function Css3dScene() {
       for (const s of statesRef.current) {
         const dx = s.pos.x - clickPos.x
         const dy = s.pos.y - clickPos.y
-        const distXY = Math.hypot(dx, dy) + 0.001
+        const distXY = Math.sqrt(dx * dx + dy * dy) + 0.001
         const tx = -dy / distXY
         const ty = dx / distXY
         const kick = SWIRL_KICK / (1 + distXY / SWIRL_FALLOFF)
         s.vel.x += tx * kick
         s.vel.y += ty * kick
         s.vel.z += (Math.random() - 0.5) * kick * 0.3
-        // stir spin kick — Z axis only (planar images)
         s.spinZ += (Math.random() - 0.5) * 3
       }
 
@@ -189,29 +205,33 @@ export function Css3dScene() {
       modeRef.current = "stir"
     }
 
+    let lastTiltX = 0
+    let lastTiltY = 0
+
     const tick = () => {
       const states = statesRef.current
-      const attractor = attractorRef.current
-      const halfW = dims.w / 2 - EDGE_PAD
-      const halfH = dims.h / 2 - EDGE_PAD
       const t = performance.now()
-
+      const isStir = modeRef.current === "stir"
       let pull = 0
-      if (modeRef.current === "stir") {
+      let attractor = null as Vec2 | null
+      if (isStir) {
         const elapsed = t - stirStartRef.current
         const t01 = Math.min(elapsed / STIR_DURATION_MS, 1)
         pull = STIR_PULL * (1 - t01)
         if (elapsed >= STIR_DURATION_MS) {
           modeRef.current = "idle"
+        } else {
+          attractor = attractorRef.current
         }
       }
 
-      // 1: forces → velocity, then spring-update Z self-rotation
       for (const s of states) {
-        s.vel.x += (attractor.x - s.pos.x) * pull
-        s.vel.y += (attractor.y - s.pos.y) * pull
+        if (attractor) {
+          s.vel.x += (attractor.x - s.pos.x) * pull
+          s.vel.y += (attractor.y - s.pos.y) * pull
+        }
         // CSS y points down, so CW tangent at (px,py) is (-py, px).
-        const flowR = Math.hypot(s.pos.x, s.pos.y) + 0.001
+        const flowR = Math.sqrt(s.pos.x * s.pos.x + s.pos.y * s.pos.y) + 0.001
         s.vel.x += (-s.pos.y / flowR) * ORBIT_CW_K
         s.vel.y += (s.pos.x / flowR) * ORBIT_CW_K
         s.vel.z += Z_FLOW
@@ -228,9 +248,9 @@ export function Css3dScene() {
         s.vel.y *= DAMPING
         s.vel.z *= DAMPING
 
-        const sp = Math.hypot(s.vel.x, s.vel.y, s.vel.z)
-        if (sp > MAX_SPEED) {
-          const r = MAX_SPEED / sp
+        const sp2 = s.vel.x * s.vel.x + s.vel.y * s.vel.y + s.vel.z * s.vel.z
+        if (sp2 > MAX_SPEED * MAX_SPEED) {
+          const r = MAX_SPEED / Math.sqrt(sp2)
           s.vel.x *= r
           s.vel.y *= r
           s.vel.z *= r
@@ -242,21 +262,16 @@ export function Css3dScene() {
         s.spinZ += (targetSpinZ - s.spinZ) * ROT_SPRING_K
         s.rot += s.spinZ
 
-        // 2: integrate position
         s.pos.x += s.vel.x
         s.pos.y += s.vel.y
         s.pos.z += s.vel.z
 
-        // 3: soft boundary (XY edges + Z range)
-        if (s.pos.x > halfW) { s.vel.x -= (s.pos.x - halfW) * 0.06; s.pos.x = halfW }
-        if (s.pos.x < -halfW) { s.vel.x -= (s.pos.x + halfW) * 0.06; s.pos.x = -halfW }
-        if (s.pos.y > halfH) { s.vel.y -= (s.pos.y - halfH) * 0.06; s.pos.y = halfH }
-        if (s.pos.y < -halfH) { s.vel.y -= (s.pos.y + halfH) * 0.06; s.pos.y = -halfH }
-        if (s.pos.z > HALF_Z) { s.vel.z -= (s.pos.z - HALF_Z) * 0.15; s.pos.z = HALF_Z }
-        if (s.pos.z < -HALF_Z) { s.vel.z -= (s.pos.z + HALF_Z) * 0.15; s.pos.z = -HALF_Z }
+        s.pos.x = clampAxis(s.pos.x, s.vel, "x", dims.halfW, XY_BOUNDARY_K)
+        s.pos.y = clampAxis(s.pos.y, s.vel, "y", dims.halfH, XY_BOUNDARY_K)
+        s.pos.z = clampAxis(s.pos.z, s.vel, "z", HALF_Z, Z_BOUNDARY_K)
       }
 
-      // 4: floating ↔ floating (full 3D sphere + Z spin kick)
+      // floating ↔ floating (full 3D sphere + Z spin kick)
       for (let i = 0; i < states.length; i++) {
         for (let j = i + 1; j < states.length; j++) {
           const bodyA = states[i]
@@ -264,9 +279,10 @@ export function Css3dScene() {
           const dx = bodyB.pos.x - bodyA.pos.x
           const dy = bodyB.pos.y - bodyA.pos.y
           const dz = bodyB.pos.z - bodyA.pos.z
-          const dist = Math.hypot(dx, dy, dz) + 0.001
+          const dist2 = dx * dx + dy * dy + dz * dz
           const minDist = bodyA.radius + bodyB.radius
-          if (dist < minDist) {
+          if (dist2 < minDist * minDist) {
+            const dist = Math.sqrt(dist2) + 0.001
             const nx = dx / dist
             const ny = dy / dist
             const nz = dz / dist
@@ -289,7 +305,6 @@ export function Css3dScene() {
               bodyB.vel.x += nx * impulse
               bodyB.vel.y += ny * impulse
               bodyB.vel.z += nz * impulse
-              // spin kick — Z axis only (planar images)
               const spinKick = Math.abs(impulse) * COLLISION_SPIN_K
               bodyA.spinZ += (Math.random() - 0.5) * spinKick
               bodyB.spinZ += (Math.random() - 0.5) * spinKick
@@ -298,15 +313,16 @@ export function Css3dScene() {
         }
       }
 
-      // 5: floating ↔ LOGO (XY plane, with Z spin kick)
+      // floating ↔ LOGO (XY plane, with Z spin kick)
       for (const s of states) {
         const cx = Math.max(-LOGO_HALF_W, Math.min(LOGO_HALF_W, s.pos.x))
         const cy = Math.max(-LOGO_HALF_H, Math.min(LOGO_HALF_H, s.pos.y))
         const dx = s.pos.x - cx
         const dy = s.pos.y - cy
-        const dist = Math.hypot(dx, dy)
+        const dist2 = dx * dx + dy * dy
 
-        if (dist < s.radius) {
+        if (dist2 < s.radius * s.radius) {
+          const dist = Math.sqrt(dist2)
           let nx: number, ny: number
           if (dist < 0.001) {
             const dR = LOGO_HALF_W + s.radius - s.pos.x
@@ -329,37 +345,32 @@ export function Css3dScene() {
           if (vDotN < 0) {
             s.vel.x -= nx * (1 + RESTITUTION) * vDotN
             s.vel.y -= ny * (1 + RESTITUTION) * vDotN
-            // spin kick — Z axis only (planar images)
             const spinKick = Math.abs(vDotN) * COLLISION_SPIN_K
             s.spinZ += (Math.random() - 0.5) * spinKick
           }
         }
       }
 
-      // 6: paint
       paintAll()
 
       const tt = tiltTargetRef.current
       const ct = tiltRef.current
-      ct.x += (tt.x - ct.x) * 0.08
-      ct.y += (tt.y - ct.y) * 0.08
+      ct.x += (tt.x - ct.x) * TILT_EASE_K
+      ct.y += (tt.y - ct.y) * TILT_EASE_K
       const tiltX = -ct.y * MAX_TILT_DEG
       const tiltY = ct.x * MAX_TILT_DEG
       if (
-        Math.abs(tiltX - lastTiltX) > 0.01 ||
-        Math.abs(tiltY - lastTiltY) > 0.01
+        Math.abs(tiltX - lastTiltX) > TILT_DEADBAND ||
+        Math.abs(tiltY - lastTiltY) > TILT_DEADBAND
       ) {
         world.style.transform =
-          `rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`
+          `rotateX(${Math.round(tiltX)}deg) rotateY(${Math.round(tiltY)}deg)`
         lastTiltX = tiltX
         lastTiltY = tiltY
       }
 
       rafRef.current = requestAnimationFrame(tick)
     }
-
-    let lastTiltX = 0
-    let lastTiltY = 0
 
     const start = () => {
       if (rafRef.current != null) return
@@ -402,7 +413,7 @@ export function Css3dScene() {
             className={styles.element}
             style={{
               width: `${item.width}px`,
-              zIndex: Math.round(100 + item.z),
+              zIndex: Math.round(Z_INDEX_BASE + item.z),
             }}
           >
             <Image
@@ -411,8 +422,8 @@ export function Css3dScene() {
               width={item.width}
               height={item.width}
               unoptimized
-              priority={false}
               draggable={false}
+              {...(item.priority && { priority: true })}
             />
           </div>
         ))}
@@ -421,7 +432,7 @@ export function Css3dScene() {
           className={styles.element}
           style={{
             width: `${CENTRAL_LOGO_WIDTH}px`,
-            zIndex: 100,
+            zIndex: Z_INDEX_BASE,
           }}
         >
           <Image

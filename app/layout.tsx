@@ -1,18 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Space_Grotesk, Syne } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-})
-
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-syne",
-})
 
 export const metadata: Metadata = {
   title: "TOMATODESIGN",
@@ -36,8 +25,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${syne.variable}`}>
-      <body className={`font-sans antialiased`}>
+    <html lang="en">
+      <head>
+        {/* Preload the LCP font; Noto Sans SC (17.7 MB) is intentionally NOT
+            preloaded — its unicode-range gates it to CJK glyphs. */}
+        <link
+          rel="preload"
+          as="font"
+          type="font/ttf"
+          href="/fonts/GoogleSans-VariableFont_GRAD,opsz,wght.ttf"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className="font-sans antialiased">
         {children}
         <Analytics />
       </body>

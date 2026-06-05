@@ -4,6 +4,9 @@ import { useCallback } from "react"
 import Image from "next/image"
 import { Css3dScene } from "@/components/hero/css-3d-scene"
 
+const XHS_URL =
+  "https://www.xiaohongshu.com/user/profile/673f253d000000001c019c4d?xsec_token=ABoKjHX7oOVNorNGxELAgmp6zBimewLEGoqez11GXrKKA%3D&xsec_source=pc_search"
+
 const PROJECTS = [
   { id: "zoonique", src: "/Zoonique｜宠物行业.png", alt: "Zoonique" },
   { id: "aevum", src: "/aevum｜家具行业png.png", alt: "Aevum" },
@@ -59,7 +62,7 @@ export default function Page() {
           <div className="portfolio-grid">
             {PROJECTS.map((p) => (
               <a key={p.id} href={`#${p.id}`} className="project-card" id={p.id}>
-                <Image src={p.src} alt={p.alt} className="project-image" width={400} height={500} unoptimized />
+                <Image src={p.src} alt={p.alt} className="project-image" width={400} height={500} sizes="33vw" loading="lazy" unoptimized />
               </a>
             ))}
           </div>
@@ -166,7 +169,7 @@ export default function Page() {
                   <a href="#">WECHAT</a>
                 </li>
                 <li>
-                  <a href="https://www.xiaohongshu.com/user/profile/673f253d000000001c019c4d?xsec_token=ABoKjHX7oOVNorNGxELAgmp6zBimewLEGoqez11GXrKKA%3D&xsec_source=pc_search" target="_blank" rel="noopener noreferrer" className="project-title" data-text="RED" onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>RED</a>
+                  <a href={XHS_URL} target="_blank" rel="noopener noreferrer" className="project-title" data-text="RED" onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>RED</a>
                 </li>
                 <li>
                   <a href="#">LOCATION</a>
@@ -178,7 +181,7 @@ export default function Page() {
                 <li>tomatodesign2025@163.com</li>
                 <li>Tomato9467</li>
                 <li>
-                  <a href="https://www.xiaohongshu.com/user/profile/673f253d000000001c019c4d?xsec_token=ABoKjHX7oOVNorNGxELAgmp6zBimewLEGoqez11GXrKKA%3D&xsec_source=pc_search" target="_blank" rel="noopener noreferrer" className="project-title" data-text="Tomato Design" onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>Tomato Design</a>
+                  <a href={XHS_URL} target="_blank" rel="noopener noreferrer" className="project-title" data-text="Tomato Design" onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>Tomato Design</a>
                 </li>
                 <li>Chengdu, China</li>
               </ul>

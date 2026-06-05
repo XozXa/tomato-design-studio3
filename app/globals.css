@@ -104,7 +104,7 @@
 }
 
 @theme inline {
-  --font-sans: "Google Sans", "Noto Sans SC", sans-serif;
+  --font-sans: var(--font-stack);
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -157,8 +157,9 @@
   --bg: #ffffff;
   --primary: #000000;
   --accent: #ff3e00;
-  --font-main: "Google Sans", "Noto Sans SC", sans-serif;
-  --font-heading: "Google Sans", "Noto Sans SC", sans-serif;
+  --font-stack: "Google Sans", "Noto Sans SC", sans-serif;
+  --font-main: var(--font-stack);
+  --font-heading: var(--font-stack);
 }
 
 * {
