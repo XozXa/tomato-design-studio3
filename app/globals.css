@@ -3,6 +3,35 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Google Sans covers Latin; Noto Sans SC auto-falls through for any CJK glyph. */
+@font-face {
+  font-family: "Google Sans";
+  src: url("/fonts/GoogleSans-VariableFont_GRAD,opsz,wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("/fonts/NotoSansSC-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  /* Without this, the 17.7 MB file downloads on first paint even when the
+     page is pure Latin (Google Sans covers it). Restricting to the CJK ranges
+     means the browser only fetches it when it actually needs a CJK glyph. */
+  unicode-range:
+    U+4E00-9FFF,    /* CJK Unified Ideographs */
+    U+3400-4DBF,    /* Extension A */
+    U+20000-2A6DF,  /* Extension B */
+    U+2A700-2B73F,  /* Extension C */
+    U+2B740-2B81F,  /* Extension D */
+    U+2B820-2CEAF,  /* Extension E */
+    U+F900-FAFF,    /* CJK Compatibility Ideographs */
+    U+2F800-2FA1F;  /* Compatibility Supplement */
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -75,9 +104,7 @@
 }
 
 @theme inline {
-  --font-space-grotesk: var(--font-space-grotesk);
-  --font-syne: var(--font-syne);
-  --font-sans: "Geist", "Geist Fallback";
+  --font-sans: "Google Sans", "Noto Sans SC", sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -130,15 +157,15 @@
   --bg: #ffffff;
   --primary: #000000;
   --accent: #ff3e00;
-  --font-main: var(--font-space-grotesk, "Space Grotesk", sans-serif);
-  --font-heading: var(--font-syne, "Syne", sans-serif);
+  --font-main: "Google Sans", "Noto Sans SC", sans-serif;
+  --font-heading: "Google Sans", "Noto Sans SC", sans-serif;
 }
 
 * {
   margin: 0px;
   padding: 0px;
   box-sizing: border-box;
-  cursor: crosshair;
+  cursor: url("/cursors/tomato-pointer.png") 16 2, crosshair;
 }
 
 html {
@@ -171,6 +198,14 @@ body {
   margin: 0px auto;
   position: relative;
   padding: 0px 40px;
+}
+
+.hero-3d-section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  /* hero intentionally sits outside .container so the 3D scene
+     spreads edge-to-edge across the full viewport */
 }
 
 nav {
@@ -226,33 +261,6 @@ nav {
   color: var(--accent);
 }
 
-header {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.hero-title {
-  font-family: var(--font-heading);
-  font-size: 90px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: -4px;
-  position: relative;
-  z-index: 2;
-  height: 120px;
-  background: transparent;
-}
-
-.hero-header {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .hero-subtitle-section {
   height: 100vh;
   display: flex;
@@ -305,64 +313,20 @@ header {
 
 @media (max-width: 768px) {
   .portfolio-wrapper {
-    padding: 0 20px;
+    padding: 0 12px;
   }
 }
 
-.floating-portfolio {
-  position: relative;
-  width: 100%;
-  height: calc(100vh + 140px);
-  overflow: hidden;
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
-.portfolio-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-  text-align: center;
-  pointer-events: none;
-}
-
-.portfolio-title {
-  font-family: var(--font-heading);
-  font-size: 88px;
-  font-weight: 800;
-  font-style: italic;
-  line-height: 1;
-  letter-spacing: -3px;
-  color: #000;
-  text-transform: lowercase;
-  margin: 0;
-}
-
-.portfolio-cta {
-  display: inline-block;
-  margin-top: 28px;
-  padding: 10px 26px;
-  border: 1px solid #000;
-  border-radius: 999px;
-  color: #000;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  pointer-events: auto;
-  transition: background 0.3s, color 0.3s;
-}
-
-.portfolio-cta:hover {
-  background: #000;
-  color: #fff;
-}
-
-.project-wrapper {
-  position: absolute;
-  display: block;
-  width: 180px;
-  height: 225px;
+@media (max-width: 768px) {
+  .portfolio-grid {
+    gap: 4px;
+  }
 }
 
 .project-card {
@@ -370,24 +334,8 @@ header {
   background: #000;
   overflow: hidden;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 4 / 5;
 }
-
-/* Scattered positions — 12 images around the centered title.
-   Sizes vary (140–220 width) for a random feel, but stay within "not too big".
-   Top: y < 30%, Middle row: y 35-45% (off to the sides), Bottom: y 60-75%. */
-.project-wrapper:nth-child(2)  { top: 5%;  left: 5%;   width: 200px; height: 250px; }
-.project-wrapper:nth-child(3)  { top: 8%;  left: 28%;  width: 150px; height: 188px; }
-.project-wrapper:nth-child(4)  { top: 2%;  left: 50%;  width: 220px; height: 275px; }
-.project-wrapper:nth-child(5)  { top: 6%;  left: 78%;  width: 170px; height: 213px; }
-.project-wrapper:nth-child(6)  { top: 38%; left: 3%;   width: 180px; height: 225px; }
-.project-wrapper:nth-child(7)  { top: 35%; left: 86%;  width: 200px; height: 250px; }
-.project-wrapper:nth-child(8)  { top: 58%; left: 4%;   width: 150px; height: 188px; }
-.project-wrapper:nth-child(9)  { top: 60%; left: 87%;  width: 170px; height: 213px; }
-.project-wrapper:nth-child(10) { top: 68%; left: 6%;   width: 180px; height: 225px; }
-.project-wrapper:nth-child(11) { top: 72%; left: 30%;  width: 140px; height: 175px; }
-.project-wrapper:nth-child(12) { top: 70%; left: 55%;  width: 160px; height: 200px; }
-.project-wrapper:nth-child(13) { top: 68%; left: 78%;  width: 190px; height: 238px; }
 
 .project-image {
   width: 100%;
@@ -492,6 +440,7 @@ footer {
 .footer-grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
+  column-gap: 80px;
   align-items: end;
 }
 
@@ -562,11 +511,6 @@ footer {
   animation: 0.4s ease 0s infinite normal none running distortion;
 }
 
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-25%); }
-}
-
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   /* Fixed mobile navigation layout to prevent overflow */
@@ -619,16 +563,6 @@ footer {
   }
 
   /* Mobile hero section */
-  header {
-    height: 80vh;
-    padding-top: 40px;
-  }
-
-  .hero-title {
-    font-size: 60px;
-    letter-spacing: -2px;
-  }
-
   .hero-subtitle {
     font-size: 14px;
     margin-left: 0;
@@ -642,41 +576,7 @@ footer {
     right: -20px;
   }
 
-  /* Mobile portfolio section - scatter layout, tight sizes so all 12 fit */
-  .floating-portfolio {
-    height: calc(100vh + 100px);
-  }
-
-  .portfolio-title {
-    font-size: 44px;
-    letter-spacing: -1.5px;
-  }
-
-  .portfolio-cta {
-    margin-top: 18px;
-    padding: 7px 18px;
-    font-size: 12px;
-  }
-
-  .project-wrapper {
-    position: absolute;
-  }
-
-  /* 12 small tiles spread around the centered title on a 375-wide viewport.
-     Avoid the vertical band y≈42-58% (title block) by pushing middle-row tiles
-     above 35% and below 65%. */
-  .project-wrapper:nth-child(2)  { top: 3%;  left: 4%;  width: 70px; height: 88px; }
-  .project-wrapper:nth-child(3)  { top: 4%;  left: 78%; width: 60px; height: 75px; }
-  .project-wrapper:nth-child(4)  { top: 18%; left: 4%;  width: 55px; height: 69px; }
-  .project-wrapper:nth-child(5)  { top: 20%; left: 82%; width: 60px; height: 75px; }
-  .project-wrapper:nth-child(6)  { top: 32%; left: 4%;  width: 60px; height: 75px; }
-  .project-wrapper:nth-child(7)  { top: 34%; left: 78%; width: 70px; height: 88px; }
-  .project-wrapper:nth-child(8)  { top: 64%; left: 4%;  width: 55px; height: 69px; }
-  .project-wrapper:nth-child(9)  { top: 66%; left: 82%; width: 60px; height: 75px; }
-  .project-wrapper:nth-child(10) { top: 78%; left: 4%;  width: 70px; height: 88px; }
-  .project-wrapper:nth-child(11) { top: 80%; left: 30%; width: 55px; height: 69px; }
-  .project-wrapper:nth-child(12) { top: 82%; left: 52%; width: 60px; height: 75px; }
-  .project-wrapper:nth-child(13) { top: 80%; left: 76%; width: 60px; height: 75px; }
+  /* Mobile portfolio section - flat 3-column grid */
 
   .project-title {
     font-size: 32px;
@@ -732,11 +632,6 @@ footer {
     padding: 0 30px;
   }
 
-  .hero-title {
-    font-size: 80px;
-    letter-spacing: -4px;
-  }
-
   .diagonal-grid {
     grid-template-columns: repeat(2, 1fr);
     align-items: start;
@@ -753,5 +648,115 @@ footer {
 
   .footer-cta {
     font-size: 50px;
+  }
+}
+
+.section-block {
+  margin: 100px 0;
+  padding: 60px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 60px;
+  align-items: start;
+  margin-bottom: 60px;
+}
+
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  margin: 0;
+  max-width: 720px;
+}
+
+.section-intro {
+  font-family: var(--font-main);
+  font-size: 15px;
+  line-height: 1.7;
+  opacity: 0.75;
+  margin: 0;
+  padding-top: 8px;
+}
+
+.feature-grid {
+  display: grid;
+  gap: 40px;
+}
+
+.feature-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.feature-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.feature-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feature-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #000;
+  border-radius: 6px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: #fff;
+  color: #000;
+}
+
+.feature-name {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.25;
+  margin: 0;
+  margin-top: 4px;
+}
+
+.feature-desc {
+  font-family: var(--font-main);
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.7;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .section-block {
+    margin: 60px 0;
+    padding: 40px 0;
+  }
+
+  .section-header {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-size: 36px;
+    letter-spacing: -1px;
+  }
+
+  .section-intro {
+    padding-top: 0;
+  }
+
+  .feature-grid-4,
+  .feature-grid-3,
+  .feature-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
 }

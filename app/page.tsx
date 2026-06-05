@@ -1,32 +1,25 @@
 "use client"
 
-import { useCallback, useEffect } from "react"
+import { useCallback } from "react"
 import Image from "next/image"
-import { GooeyMarquee } from "@/components/ui/gooey-marquee"
-import Floating, { FloatingElement } from "@/components/ui/parallax-floating"
+import { Css3dScene } from "@/components/hero/css-3d-scene"
+
+const PROJECTS = [
+  { id: "zoonique", src: "/Zoonique｜宠物行业.png", alt: "Zoonique" },
+  { id: "aevum", src: "/aevum｜家具行业png.png", alt: "Aevum" },
+  { id: "edens", src: "/eden's ｜餐饮行业(西餐).png", alt: "Eden's" },
+  { id: "groovy", src: "/GROOVY｜家具行业.png", alt: "Groovy" },
+  { id: "meow-cafe", src: "/Meow cafe｜咖啡行业.png", alt: "Meow Cafe" },
+  { id: "ohbake", src: "/ohbake｜烘焙行业.png", alt: "Ohbake" },
+  { id: "pawprint", src: "/pawprint｜宠物行业.png", alt: "Pawprint" },
+  { id: "pureo", src: "/pureo｜果蔬行业.png", alt: "Pureo" },
+  { id: "scoopie", src: "/scoopie｜饮品行业.png", alt: "Scoopie" },
+  { id: "tact-ease", src: "/tact ease｜服饰行业.png", alt: "Tact Ease" },
+  { id: "the-bite", src: "/the bite｜餐饮行业.png", alt: "The Bite" },
+  { id: "yamyap", src: "/Yamyap｜烘焙行业.png", alt: "Yamyap" },
+] as const
 
 export default function Page() {
-  useEffect(() => {
-    // Smooth scroll for anchor links
-    const handleNavClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (target.tagName === "A" && target.getAttribute("href")?.startsWith("#")) {
-        e.preventDefault()
-        const id = target.getAttribute("href")?.slice(1)
-        const element = document.getElementById(id || "")
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "start" })
-        }
-      }
-    }
-
-    document.addEventListener("click", handleNavClick)
-
-    return () => {
-      document.removeEventListener("click", handleNavClick)
-    }
-  }, [])
-
   const handleDistortEnter = useCallback(
     (e: React.MouseEvent<HTMLElement>) =>
       e.currentTarget.classList.add("distort-active"),
@@ -42,12 +35,11 @@ export default function Page() {
     <>
       <div className="grid-overlay"></div>
 
-      <div className="container">
-        {/* Hero Section */}
-        <header className="hero-header">
-          <GooeyMarquee text="TOMATO DESIGN " className="hero-title" />
-        </header>
+      <section className="hero-3d-section">
+        <Css3dScene />
+      </section>
 
+      <div className="container">
         {/* Subtitle Section */}
         <section className="hero-subtitle-section">
           <div className="hero-subtitle-wrapper">
@@ -61,159 +53,99 @@ export default function Page() {
         </section>
       </div>
 
-      {/* Portfolio Section — wider than .container so 12 tiles can spread out */}
+      {/* Portfolio Section — flat 3-column grid of 12 works */}
       <section className="portfolio-section" id="projects">
         <div className="portfolio-wrapper">
-          <Floating sensitivity={-0.5} className="floating-portfolio">
-            <div className="portfolio-center">
-              <h2 className="portfolio-title">selected works.</h2>
-              <a href="#contact" className="portfolio-cta">GO</a>
-            </div>
-
-            <FloatingElement depth={1} className="project-wrapper">
-                <a href="#zoonique" className="project-card" id="zoonique">
-                  <Image src="/Zoonique｜宠物行业.png" alt="Zoonique" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={2} className="project-wrapper">
-                <a href="#aevum" className="project-card" id="aevum">
-                  <Image src="/aevum｜家具行业png.png" alt="Aevum" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1.5} className="project-wrapper">
-                <a href="#edens" className="project-card" id="edens">
-                  <Image src="/eden's ｜餐饮行业(西餐).png" alt="Eden's" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={2} className="project-wrapper">
-                <a href="#groovy" className="project-card" id="groovy">
-                  <Image src="/GROOVY｜家具行业.png" alt="Groovy" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1} className="project-wrapper">
-                <a href="#meow-cafe" className="project-card" id="meow-cafe">
-                  <Image src="/Meow cafe｜咖啡行业.png" alt="Meow Cafe" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1.5} className="project-wrapper">
-                <a href="#ohbake" className="project-card" id="ohbake">
-                  <Image src="/ohbake｜烘焙行业.png" alt="Ohbake" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1.5} className="project-wrapper">
-                <a href="#pawprint" className="project-card" id="pawprint">
-                  <Image src="/pawprint｜宠物行业.png" alt="Pawprint" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1} className="project-wrapper">
-                <a href="#pureo" className="project-card" id="pureo">
-                  <Image src="/pureo｜果蔬行业.png" alt="Pureo" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={2} className="project-wrapper">
-                <a href="#scoopie" className="project-card" id="scoopie">
-                  <Image src="/scoopie｜饮品行业.png" alt="Scoopie" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1} className="project-wrapper">
-                <a href="#tact-ease" className="project-card" id="tact-ease">
-                  <Image src="/tact ease｜服饰行业.png" alt="Tact Ease" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1.5} className="project-wrapper">
-                <a href="#the-bite" className="project-card" id="the-bite">
-                  <Image src="/the bite｜餐饮行业.png" alt="The Bite" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-
-              <FloatingElement depth={1} className="project-wrapper">
-                <a href="#yamyap" className="project-card" id="yamyap">
-                  <Image src="/Yamyap｜烘焙行业.png" alt="Yamyap" className="project-image" width={240} height={300} unoptimized />
-                </a>
-              </FloatingElement>
-          </Floating>
+          <div className="portfolio-grid">
+            {PROJECTS.map((p) => (
+              <a key={p.id} href={`#${p.id}`} className="project-card" id={p.id}>
+                <Image src={p.src} alt={p.alt} className="project-image" width={400} height={500} unoptimized />
+              </a>
+            ))}
+          </div>
         </div>
       </section>
 
       <div className="container">
 
         {/* Services Section */}
-        <section id="services" style={{ margin: "80px 0", padding: "60px 0", borderTop: "1px solid rgba(0,0,0,0.1)" }}>
-          <div style={{ marginTop: "40px" }}>
-            <h2 style={{ fontSize: "14px", fontWeight: 800, letterSpacing: "5px", textTransform: "uppercase", marginBottom: "50px", fontFamily: "var(--font-syne)" }}>
-              Services
-            </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "40px", alignItems: "start" }}>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <h3 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "10px", fontFamily: "var(--font-syne)" }}>BRAND DESIGN</h3>
-                <p style={{ fontSize: "14px", lineHeight: 1.6, opacity: 0.7, flex: 1, display: "flex", alignItems: "flex-end" }}>Visual Identity, Logo Design, and Brand Guidelines.</p>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <h3 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "10px", fontFamily: "var(--font-syne)" }}>PACKAGING DESIGN</h3>
-                <p style={{ fontSize: "14px", lineHeight: 1.6, opacity: 0.7, flex: 1, display: "flex", alignItems: "flex-end" }}>Product Packaging and Unboxing Experience.</p>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <h3 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "10px", fontFamily: "var(--font-syne)" }}>IP DESIGN</h3>
-                <p style={{ fontSize: "14px", lineHeight: 1.6, opacity: 0.7, flex: 1, display: "flex", alignItems: "flex-end", paddingTop: "36px" }}>Character Design and IP Ecosystems.</p>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <h3 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "10px", fontFamily: "var(--font-syne)" }}>EVENT VISUALS</h3>
-                <p style={{ fontSize: "14px", lineHeight: 1.6, opacity: 0.7, flex: 1, display: "flex", alignItems: "flex-end" }}>Exhibitions, Posters, and Spatial Visuals.</p>
-              </div>
+        <section id="services" className="section-block">
+          <div className="section-header">
+            <h2 className="section-title">Services tailored to the full lifecycle of a brand.</h2>
+            <p className="section-intro">
+              From the first sketch to the final shelf, we cover the visual surface area a young brand needs to launch, grow, and stay distinct.
+            </p>
+          </div>
+          <div className="feature-grid feature-grid-4">
+            <div className="feature-card">
+              <span className="feature-number">01</span>
+              <h3 className="feature-name">Brand Design</h3>
+              <p className="feature-desc">Visual Identity, Logo Design, and Brand Guidelines.</p>
             </div>
+            <div className="feature-card">
+              <span className="feature-number">02</span>
+              <h3 className="feature-name">Packaging Design</h3>
+              <p className="feature-desc">Product Packaging and Unboxing Experience.</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-number">03</span>
+              <h3 className="feature-name">IP Design</h3>
+              <p className="feature-desc">Character Design and IP Ecosystems.</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-number">04</span>
+              <h3 className="feature-name">Event Visuals</h3>
+              <p className="feature-desc">Exhibitions, Posters, and Spatial Visuals.</p>
+            </div>
+          </div>
+        </section>
 
-            {/* Process Section */}
-            <div style={{ marginTop: "80px" }}>
-              <h2 style={{ fontSize: "14px", fontWeight: 800, letterSpacing: "5px", textTransform: "uppercase", marginBottom: "50px", fontFamily: "var(--font-syne)" }}>
-                Process
-              </h2>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "40px" }}>
-                <div>
-                  <h3 className="project-title" data-text="01" style={{ fontSize: "48px", marginBottom: "20px" }} onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>01</h3>
-                  <div style={{ fontSize: "24px", fontWeight: 800, fontFamily: "var(--font-syne)", marginBottom: "10px" }}>Consultation</div>
-                  <p style={{ fontSize: "14px", lineHeight: 1.8, opacity: 0.7 }}>Initial Communication · Define Design Goals · Confirm Quote & Timeline · Sign Contract · Pay Deposit</p>
-                </div>
-                <div>
-                  <h3 className="project-title" data-text="02" style={{ fontSize: "48px", marginBottom: "20px" }} onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>02</h3>
-                  <div style={{ fontSize: "24px", fontWeight: 800, fontFamily: "var(--font-syne)", marginBottom: "10px" }}>Project Kickoff</div>
-                  <p style={{ fontSize: "14px", lineHeight: 1.8, opacity: 0.7 }}>Deep Dive into Requirements · Market Research · Style Positioning · Visual Direction Discussion · Confirm Direction</p>
-                </div>
-                <div>
-                  <h3 className="project-title" data-text="03" style={{ fontSize: "48px", marginBottom: "20px" }} onMouseEnter={handleDistortEnter} onMouseLeave={handleDistortLeave}>03</h3>
-                  <div style={{ fontSize: "24px", fontWeight: 800, fontFamily: "var(--font-syne)", marginBottom: "10px" }}>Execution</div>
-                  <p style={{ fontSize: "14px", lineHeight: 1.8, opacity: 0.7 }}>Design Creation · Proposal Presentation · Feedback & Refinement · Deliver Files · Follow-up Support</p>
-                </div>
-              </div>
+        {/* Process Section */}
+        <section id="process" className="section-block">
+          <div className="section-header">
+            <h2 className="section-title">A clear, three-step path from brief to delivery.</h2>
+            <p className="section-intro">
+              We keep the process lean and transparent — every step has a defined output, so the brand always knows where the project stands.
+            </p>
+          </div>
+          <div className="feature-grid feature-grid-3">
+            <div className="feature-card">
+              <span className="feature-number">01</span>
+              <h3 className="feature-name">Consultation</h3>
+              <p className="feature-desc">Initial Communication · Define Design Goals · Confirm Quote & Timeline · Sign Contract · Pay Deposit</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-number">02</span>
+              <h3 className="feature-name">Project Kickoff</h3>
+              <p className="feature-desc">Deep Dive into Requirements · Market Research · Style Positioning · Visual Direction Discussion · Confirm Direction</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-number">03</span>
+              <h3 className="feature-name">Execution</h3>
+              <p className="feature-desc">Design Creation · Proposal Presentation · Feedback & Refinement · Deliver Files · Follow-up Support</p>
             </div>
           </div>
         </section>
 
         {/* Tomato Design Section */}
-        <section id="atelier" style={{ margin: "120px 0", padding: "80px 0", borderTop: "1px solid rgba(0,0,0,0.1)" }}>
-          <div style={{ marginTop: "40px", maxWidth: "800px" }}>
-            <h2 style={{ fontSize: "48px", fontWeight: 800, marginBottom: "20px", fontFamily: "var(--font-syne)" }}>
-              CORE TEAM
-            </h2>
-            <p style={{ fontSize: "16px", lineHeight: 2, opacity: 0.8, marginBottom: "30px" }}>
-              CC<br />
-              Studio Manager<br />
-              Master of Fine Arts graduate, former team lead at a renowned design firm with 7 years of hands-on design experience. Specialized in illustration for years, excelling at combining illustration art with commercial design, creating warm and thoughtful design.
+        <section id="atelier" className="section-block">
+          <div className="section-header">
+            <h2 className="section-title">Core Team. The hands behind every project.</h2>
+            <p className="section-intro">
+              A small, senior pair — one illustrator-leaning, one product-leaning. Two perspectives, one studio voice.
             </p>
-            <p style={{ fontSize: "16px", lineHeight: 2, opacity: 0.8 }}>
-              Leo<br />
-              Design Partner<br />
-              Former team lead at a listed company, deeply engaged in consumer technology. Skilled at shaping brand warmth, with the ability to transform rational product logic into emotional brand language.
-            </p>
+          </div>
+          <div className="feature-grid feature-grid-2">
+            <div className="feature-card">
+              <span className="feature-number">CC</span>
+              <h3 className="feature-name">Studio Manager</h3>
+              <p className="feature-desc">Master of Fine Arts graduate, former team lead at a renowned design firm with 7 years of hands-on design experience. Specialized in illustration for years, excelling at combining illustration art with commercial design, creating warm and thoughtful design.</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-number">Leo</span>
+              <h3 className="feature-name">Design Partner</h3>
+              <p className="feature-desc">Former team lead at a listed company, deeply engaged in consumer technology. Skilled at shaping brand warmth, with the ability to transform rational product logic into emotional brand language.</p>
+            </div>
           </div>
         </section>
 

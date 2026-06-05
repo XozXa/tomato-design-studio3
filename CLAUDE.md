@@ -25,7 +25,7 @@ npm run lint     # eslint .
 - **shadcn/ui**（new-york 风格，neutral 底色，lucide 图标）—— 配置见 `components.json`
 - **motion**（v12）—— Framer Motion 的继任者；以 `motion/react` 路径导入
 - **next-themes** 处理暗色模式
-- 字体：`Space_Grotesk`（正文）+ `Syne`（标题），在 `app/layout.tsx` 中通过 `next/font/google` 加载
+- 字体：`Google Sans`（拉丁，self-hosted via `@font-face` in `app/globals.css`，2026-06-04 从 `Oswald` 换过来）+ `Noto Sans SC`（中文，浏览器自动 fallback 渲染 CJK）。Noto Sans SC 的 variable TTF 是 17.7 MB，2026-06-04 给它的 `@font-face` 加了 `unicode-range` 限定为 CJK 区间（U+4E00-9FFF、U+3400-4DBF、U+20000-2A6DF、U+2A700-2B73F、U+2B740-2B81F、U+2B820-2CEAF、U+F900-FAFF、U+2F800-2FA1F），纯拉丁页（作品集图 alt、metadata 等）跳过这个 17.7 MB 下载，浏览器只在遇到汉字时才拉它。
 
 ## 目录结构
 
@@ -36,9 +36,9 @@ app/
   globals.css          # shadcn 变量 + 品牌 CSS（一个文件，两个 :root 块）
 components/
   theme-provider.tsx   # next-themes 包装（已定义但未在 layout 中挂载）
-  ui/                  # 60+ shadcn 基础组件 + 3 个自定义组件（见下文）
-hooks/
-  use-mouse-position-ref.ts   # 基于 ref 的鼠标坐标，供 Floating 使用
+  ui/                  # 60+ shadcn 基础组件 + 2 个自定义组件（见下文）
+  hero/                # 首屏 3D 漂浮场景（CSS 3D + JS 物理，见下文）
+hooks/                        # shadcn 工具 hook（use-mobile, use-toast）
 lib/
   utils.ts             # cn() = clsx + tailwind-merge
 public/                # 作品集 PNG（中文文件名）、占位图、抽象背景 JPG
@@ -51,28 +51,130 @@ ai-website-cloner-template/   # 独立的子项目（截图→代码流水线）
 
 整个站点是一个 `"use client"` 组件，所有 section 内联其中：
 
-- `useEffect` 中挂载了 **锚链接平滑滚动**，以及在 `.project-title` 元素上的 **悬停扭曲动效**（CSS 动画 `distortion` + 类名 `distort-active`）。
-- 布局模式：两个 `div.container`（最大宽度 1200px）夹着一个更宽的 `section.portfolio-section`（1600px），让 12 个散落分布的作品集小图可以铺到文字栏之外。
-- 大量使用内联 `style={{...}}` 来处理一次性布局（Services、Process、Atelier、Footer）。不要为了风格统一把这些迁到 Tailwind class —— 它们是逐节调过的。
+- 锚链接的平滑滚动由 `globals.css` 里 `html { scroll-behavior: smooth }` 统一处理，不在 JS 里重复实现。
+- 布局模式：两个 `div.container`（最大宽度 1200px）夹着一个更宽的 `section.portfolio-section`（1600px），让 12 个作品集小图可以铺到文字栏之外。
+- 字体通过 CSS 变量 `--font-main` / `--font-heading` / `--font-sans` 统一引用，**不**在 `style={{ fontFamily: ... }}` 里硬编码家族名（除了 .project-title / .section-title 等少数样式里需要时）。
 
 ### 作品集小图的位置
 
-12 张散落的小图通过 **`app/globals.css` 里的 `nth-child` 选择器**定位（`.project-wrapper:nth-child(2)` 到 `:nth-child(13)`），**桌面端和移动端（`@media max-width: 768px`）是各自独立的块**。增删小图时，`nth-child` 索引和居中 `<div.portfolio-center>` 带来的 `+1` 偏移是关键 —— 第一个 `.project-wrapper` 是 `:nth-child(2)`，不是 `:nth-child(1)`。
+12 张作品图以**平铺 3 列网格**呈现：`.portfolio-grid { grid-template-columns: repeat(3, 1fr); gap: 8px }`（移动端 `gap: 4px`），每张图 `aspect-ratio: 4/5`，hover 时 `filter: grayscale → 0` + `scale(1.05)`。图片顺序就是 `app/page.tsx` 顶部 `PROJECTS` 数组的顺序，**不再**用 `nth-child` 散布定位。
 
 ## `components/ui/` 中的自定义组件
 
-以下三个不是 shadcn 组件，是站点专用的：
+只剩一个：
 
-- **`gooey-marquee.tsx`** —— 标题区大字。利用 `filter: contrast(15)` + `blur(0.03em)` 实现类 SVG 的黏性模糊效果，文字复制两份以实现无缝循环，亮色/暗色各自一层。
-- **`parallax-floating.tsx`** —— 导出 `Floating`（Provider）和 `FloatingElement`（子项）。使用 `motion/react` 的 `useAnimationFrame` 和 `useMousePositionRef`，按 `depth * sensitivity` 每帧平移子元素。作品集中 `sensitivity={-0.5}` 让方向反转。
 - **`kinetic-shatter-box-section.tsx`** —— 拖动摇晃就会裂开、碎裂的盒子。`page.tsx` 中暂未使用，留作未来扩展。
+
+> 历史：`gooey-marquee.tsx`（标题区黏性模糊大字，`filter: contrast(15) + blur(0.03em)`）和 `parallax-floating.tsx`（基于 motion/react 的 Parallax 容器）都曾用在首屏，2026-06-03 改用首屏 3D 场景后**已删除**。git 历史里可以找回参考实现。
+
+## 首屏 3D Hero Scene（2026-06-03 新增；2026-06-04 性能 review）
+
+首屏从「`GooeyMarquee` 大字标题」改成「中央 LOGO + 6 张番茄图自由漂浮 + 鼠标点击聚拢」的交互式场景。**没用 R3F/three.js**，纯 CSS 3D transforms + JS 物理循环，bundle 几乎零增量。
+
+### 文件组成
+
+| 路径 | 角色 | 行数 |
+|---|---|---|
+| `components/hero/css-3d-scene.tsx` | 主组件：DOM 渲染 + `requestAnimationFrame` 物理循环 + 鼠标/点击事件 + visibility/RAF 守卫 | ~330 |
+| `components/hero/floating-config.ts` | 6 个浮动元素的初始位置、尺寸、旋转配置 + 中央 LOGO 常量 | ~33 |
+| `components/hero/hero.module.css` | `.scene`/`.world`/`.element`/`.logo` 样式 | ~75 |
+| `app/page.tsx` (L4, L60) | `import { Css3dScene }` + `<section className="hero-3d-section"><Css3dScene /></section>` | — |
+| `app/globals.css` (`.hero-3d-section`) | 首屏专用 100vh 容器，**故意放在 `.container` 外**让场景铺满全宽 | — |
+
+### 架构
+
+```
+.scene  (100vh × 100vw, perspective: 1500px, overflow: hidden, background: #fff)
+  └─ .world  (preserve-3d, JS 每帧改 rotateX/rotateY 跟随鼠标，MAX_TILT_DEG=16)
+      ├─ .element × 6  (FLOATING_ITEMS, JS 物理控制 position)
+      └─ .element (中央 LOGO, 不进物理循环, 始终居中, breathe 动画在 CSS 里)
+```
+
+### 物理循环（6 阶段 + 2 模式状态机）
+
+`useEffect` 里启动一个 `requestAnimationFrame` 循环（tab 隐藏时自动暂停），每帧对 6 个浮动元素跑：
+
+1. **施力**：朝 attractor 的引力（仅 stir 模式有效）+ XY 平面顺时针轨道流（`ORBIT_CW_K`）+ +z 漂移（`Z_FLOW`）+ 3 个频率的正弦基底漂移（`BASE_DRIFT_FREQ_X/Y/Z` + `WOBBLE_FREQ`）+ 随机抖动（`RANDOM_PUSH`）
+2. **阻尼 + 限速**：`vel *= DAMPING`；超 `MAX_SPEED` 时按比例缩回
+3. **Z 自转弹簧**：`spinZ` 朝正弦目标 `Math.sin(t * ROT_FREQ_Z) * SPIN_AMP_Z` 收敛，碰撞或点击会注入 spin kick 后弹簧衰减
+4. **积分位置**：`pos += vel`
+5. **软边界**：超出 XY 半视口或 Z 范围时反向推回
+6. **碰撞**：浮动↔浮动（全 3D 球碰撞 + Z 平面旋转 kick）、浮动↔LOGO（圆形包围盒 + 角点 fallback）
+7. **绘制**：`el.style.transform = 'translate(-50%, -50%) translate3d(...) rotate(...)'`
+
+**两种模式（`Mode = "idle" | "stir"`）**：
+
+| 模式 | 触发 | `pull` 行为 |
+|---|---|---|
+| `idle` | 默认 | 无中心引力，元素靠轨道流 + 漂移自由循环 |
+| `stir` | 鼠标点击 scene | 每个元素获得切向脉冲（vortex around click point，距离衰减），同时向点击点施加 `STIR_PULL * (1 - elapsed/STIR_DURATION_MS)` 的中心引力；`STIR_DURATION_MS` 后回 `idle` |
+
+**关键常数（`css-3d-scene.tsx` 顶部）**：
+```ts
+const MAX_TILT_DEG = 16
+const RANDOM_PUSH = 0.4
+const DAMPING = 0.94
+const MAX_SPEED = 11
+const ORBIT_CW_K = 0.05
+const Z_FLOW = 0.05
+const SWIRL_KICK = 14         // click 漩涡初速
+const SWIRL_FALLOFF = 250     // 距离衰减尺度
+const STIR_PULL = 0.004       // stir 模式中心引力（线性衰减）
+const STIR_DURATION_MS = 2000 // stir 持续时间
+```
+
+### 元素初始位置（`floating-config.ts`）
+
+每个元素配 `{ x, y, z, width, rot, src }`：
+- `x/y` 是相对场景中心的 px 偏移；`RADIUS=480, Y_SPAN=300` 让 6 张图散布到视口四角
+- `z` 配置里当前**全设为 0**（避免透视投影让远处元素视觉上偏向中央），但**初始化时每个元素会再叠 `±150` px 的随机 z 偏移**（见 `css-3d-scene.tsx` 中 `pos.z = (Math.random() - 0.5) * 300`），让每次刷新 z 分布不同
+- `width` 在 270-375 之间，`rot` 在 ±12° 之间
+- 初始时还会叠 `±140` px 的 xy 随机偏移 + `±0.8` 的随机初速度，保证每次刷新形状不同
+
+中央 LOGO 单独硬编码：`CENTRAL_LOGO_SRC = "番茄们 logo3.png"`，`CENTRAL_LOGO_WIDTH = 600`，`CENTRAL_LOGO_ASPECT = 0.3`（高 = 宽 × 0.3）。
+
+### 已踩过的坑
+
+- ⚠️ **DOM 节点和 state 数组的绑定**：JS 物理循环要直接操作 DOM `el.style.transform` 而不是走 React state（每帧 setState 60 次会卡死）。`useEffect` 里通过 `world.children[i]` 拿到 DOM 节点，绑到 `statesRef.current[i].el`。**注意 children 顺序**：6 个浮动元素在前（children[0..5]），中央 LOGO 是 children[6]，物理循环只跑前 6 个。
+- ⚠️ **`translate(-50%, -50%)` 必须同时存在于 CSS 和 JS 输出**：CSS `.element` 的 `transform: translate(-50%, -50%)` 是基础居中，JS 每帧把整个 `transform` 字符串覆盖掉，所以 JS 字符串里也必须前置 `translate(-50%, -50%)` 才能保持图片以自己的中心点定位，否则会出现左上角对齐 → LOGO 跑偏的 bug。
+- ⚠️ **LOGO 不能用 `marginLeft/marginTop = -width/2` 居中**：LOGO 图片高宽比不是 1:1（实际渲染高度 ≠ width），用 `margin` 算出来的 top-left 永远对不准。**只能**靠 `top: 50%; left: 50%; transform: translate(-50%, -50%)` 这套 CSS 标准居中。
+- ⚠️ **场景必须铺满首屏**：原本 Hero 在 `.container`（max-width 1200px）里，3D 场景被夹在中间两侧留白。现在专门加了 `.hero-3d-section { width: 100%; height: 100vh; }` 在 `.container` **外面**，才铺满。
+- ✅ **Z 轴自转只用 rotate（X/Y 不要用）**：图片是平面 PNG，绕 X/Y 旋转会侧面对相机变成一条线。`css-3d-scene.tsx` 里只写 `rotate(Z)`，碰撞的 spin kick 也只往 Z 注入。
+- ✅ **资产命名（中文 + 全角空格）OK**：`番茄们 logo3.png` / `番茄们 浮动元素1.png` 等，Next.js 的 `<Image>` + 静态文件 handler 能自动处理，不需要 `encodeURI()`。
+
+### 验证
+
+- `tsc --noEmit` 通过
+- 6/7 元素每帧 transform 改变（中央 LOGO 不动）
+- 点击 scene 任意位置 → 6 张图获得切向脉冲，沿漩涡方向飞散，`STIR_DURATION_MS` (2s) 内逐步回 `idle`
+- 鼠标移动 → 整个 `.world` 跟随倾斜（最大 ±16°），离开 scene 自动回正
+- 切到其他 tab → RAF 自动暂停（`visibilitychange` 监听），不耗电
+
+### 2026-06-04 性能 / 质量 review pass
+
+跑了一次三 agent 并行 review（reuse / quality / efficiency），按发现改了：
+
+- `hero.module.css` 的 `.world` 移除了 `transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)` —— rAF 每帧覆盖 transform，CSS transition 在打架，纯浪费。
+- `css-3d-scene.tsx` 的 `mousemove` 从 `window` 挪到 `scene`（之前全页鼠标移动都触发 tilt 计算 + `getBoundingClientRect` layout read）。
+- `dims` 缓存完整 rect（`w/h/left/top`），ResizeObserver 刷新；onMove / onClick 读缓存不再每事件强制 layout。
+- `paintAll` 加 zIndex dirty check：`State.lastZ` 字段，rounded 值不变就不写 `style.zIndex`，z 稳定时省 6 次/帧的 style invalidation。
+- 删 stir→idle 切换时 `attractorRef = {x: 0, y: 0}` 的死代码（idle 模式 `pull=0`，吸引子永不读）。
+- 注释清理：删常量上方长 WHAT 注释块，State 字段尾部 `// current Z rotation (deg)` 之类字段注释删掉，6 个 `// ── Phase N: ... ──` ASCII 分隔符压成 `// N: ...`。保留 Z 轴 only（平面 PNG 绕 X/Y 会变线）等关键 WHY 注释。
+
+**故意没动的**（false positive 或不值得）：
+- 不换成 `motion/react` 的 `useAnimationFrame` —— 整个 useEffect 重写，收益有限
+- 不合并 `mode` / `attractor` / `stirStart` refs —— 风格偏好
+- 不统一两段碰撞循环 —— 球-球 vs 球-AABB，强行抽象更乱
+- 不优化 `Math.hypot` / 不加 6 元素空间 culling / 不管 `toFixed` 分配 —— 量太小
+- 不拆 `page.tsx` 的 server / client component —— 改动面太大
 
 ## 样式上的坑
 
-- **`app/globals.css` 里有两段 `:root`** —— 第一段是 shadcn 的 neutral 调色板（第 6–40 行），第二段（第 129–135 行）用品牌值覆盖（`--primary: #000`、`--accent: #ff3e00`、字体变量）。后写者赢。删之前先确认设计系统。
+- **`app/globals.css` 里有两段 `:root`** —— 第一段是 shadcn 的 neutral 调色板，第二段用品牌值覆盖（`--primary: #000`、`--accent: #ff3e00`、字体变量 `--font-main` / `--font-heading` / `--font-sans`）。后写者赢。删之前先确认设计系统。
 - 全局规则把 `cursor: crosshair` 设在 `*` 上、把 `overflow-x: hidden` 设在 `body` 上 —— 这是有意为之，不是 bug。
 - `.project-title::before/::after` 通过 `attr(data-text)` 在悬停时渲染色差副本（红 + 蓝，带倾斜）。所有带 `project-title` 类的元素都必须有 `data-text` 属性。
 - 右侧固定导航（`width: 80px`，vertical-rl 书写方向）的样式写在 `globals.css` 里，但 `page.tsx` 中**没有渲染 `<nav>` 元素** —— 这套样式是预留的 CSS、待后续使用。移动端（`max-width: 768px`）会把它变成顶部水平条。
+- 全局 `*` 规则里的 `cursor: url("/cursors/tomato-pointer.png") 16 2, crosshair` —— 用的是番茄蒂（绿色星芒）剪影，hotspot (16, 2) 设在图中心横坐标 + 顶部偏内 2 px，对准星芒最尖处；`crosshair` 是图片加载失败时的兜底。原图 2062×1855 用 `sips -Z 32` 缩成 32×28 px、2.8 KB。
 
 ## `next.config.mjs` —— 故意放得很松
 
@@ -83,6 +185,135 @@ ai-website-cloner-template/   # 独立的子项目（截图→代码流水线）
 ## 公共资源
 
 作品集 PNG 文件名带中文行业后缀，例如 `Zoonique｜宠物行业.png`（宠物行业）、`aevum｜家具行业png.png`（家具行业）。文件名里的 `｜` 是全角竖线，引用时务必保留。`public/` 里的抽象 JPG 用作背景/装饰。SVG 图标：`/tomato (1).svg`（注意文件名里有空格和括号）。
+
+## 部署（tomatobrand.cn）
+
+当前生产环境：阿里云 ECS（Windows Server）+ IIS 做 TLS 终止 / 反代 + 本机 Next.js 进程做渲染。
+
+### 服务器拓扑
+
+```
+公网 <ECS_PUBLIC_IP> (ECS, Windows)
+  └─ IIS (port 80 + 443, 5 个绑定)
+      └─ ARR/3.0 反向代理 (proxy enabled)
+          └─ Next.js 16 进程 [127.0.0.1:3000, pm2 托管]
+```
+
+- **公网 IP**：`<ECS_PUBLIC_IP>` —— DNS `tomatobrand.cn` 与 `www.tomatobrand.cn` 都解析到这里
+- **VPC 内网 IP**：`172.18.175.85` —— `next start` 启动时 `- Network:` 那行打印的，仅本机通信用
+- **5 个 IIS 绑定**：3 HTTP（`:80` 通配 / `*:80:tomatobrand.cn` / `*:80:www.tomatobrand.cn`）+ 2 HTTPS SNI（`:443:tomatobrand.cn` / `:443:www.tomatobrand.cn`）
+
+### 文件路径速查
+
+| 角色 | 路径 | 在仓库里？ |
+|---|---|---|
+| 代码 | `C:\tomato-site\` | ✅ 仓库根直接对应 |
+| 证书 + 密码 | `C:\tomato-site\certs\` | ❌（密码存放方式见部署记录） |
+| PM2 启动包装 | `C:\tomato-site\start.js` | ❌（手写） |
+| IIS 反代配置 | `C:\inetpub\wwwroot\web.config` | ❌（**不在** `C:\tomato-site\` 下） |
+| PM2 dump | `C:\Users\Administrator\.pm2\dump.pm2` | ❌ |
+
+### 一次性部署（已跑过的命令）
+
+> 2026-06-02 跑过初版，6/03 加了 www 绑定。
+
+1. **拉代码 + 装依赖 + 构建**：
+   ```powershell
+   git clone https://github.com/XozXa/tomato-design-studio3.git C:\tomato-site
+   cd C:\tomato-site
+   npm install
+   npm run build
+   ```
+
+2. **PM2 守护**（注意：**必须用 `start.js` 包装**，详见下方"坑"）：
+   ```powershell
+   npm install -g pm2 pm2-windows-startup
+   pm2-startup install
+   pm2 start C:\tomato-site\start.js --name "tomato-site"
+   pm2 save
+   ```
+
+3. **IIS + ARR + URL Rewrite**：
+   ```powershell
+   Install-WindowsFeature -name Web-Server -IncludeManagementTools
+   # 从微软下载中心拉 rewrite_amd64_en-US.msi + requestRouter_amd64.msi，msiexec /i 静默安装
+   & "C:\Windows\System32\inetsrv\appcmd.exe" set config -section:system.webServer/proxy /enabled:true /commit:apphost
+   iisreset
+   ```
+
+4. **IIS 反代规则**（写进 `C:\inetpub\wwwroot\web.config`）：
+   ```xml
+   <configuration><system.webServer><rewrite><rules>
+     <rule name="ReverseProxyToNext" stopProcessing="true">
+       <match url="(.*)" />
+       <action type="Rewrite" url="http://127.0.0.1:3000/{R:1}" />
+     </rule>
+   </rules></rewrite></system.webServer></configuration>
+   ```
+
+5. **HTTP 绑定**（3 个）：
+   ```powershell
+   New-WebBinding -Name "Default Web Site" -Protocol http -Port 80 -HostHeader "tomatobrand.cn"
+   New-WebBinding -Name "Default Web Site" -Protocol http -Port 80 -HostHeader "www.tomatobrand.cn"
+   ```
+
+6. **HTTPS 绑定**（每域名各做一次：导入 PFX → `New-WebBinding -SslFlags 1` → `AddSslCertificate`）：
+   ```powershell
+   $pwd = Get-Content "C:\tomato-site\certs\pfx-password.txt" -Raw -Encoding UTF8 | ConvertTo-SecureString -AsPlainText -Force
+   $cert = Import-PfxCertificate -FilePath "C:\tomato-site\certs\tomatobrand.cn.pfx" -CertStoreLocation "Cert:\LocalMachine\My" -Password $pwd
+   $thumb = $cert.Thumbprint
+   New-WebBinding -Name "Default Web Site" -Protocol https -Port 443 -HostHeader "tomatobrand.cn" -SslFlags 1
+   (Get-WebBinding -Name "Default Web Site" -Protocol https -HostHeader "tomatobrand.cn").AddSslCertificate($thumb, "My")
+   ```
+   `www.tomatobrand.cn` 同理，文件用 `www.tomatobrand.cn.pfx` + `www-pfx-password.txt`。
+
+### 迭代部署（修改代码后）
+
+```powershell
+cd C:\tomato-site
+git pull
+# 仅当 package.json / 锁文件变了才需要：npm install
+npm run build
+pm2 restart tomato-site
+```
+
+> 目前**没有 CI/CD**，全手动。改完代码要 SSH 上去跑这 4 步。
+
+### 已知状态（截至 2026-06-03）
+
+- Next.js 进程：`pm2 list` → `tomato-site` 状态 `online`，~44 MB
+- 证书指纹：
+  - apex: `6A3761C34496BDE2A04A98EEAAB18F98922654F3`
+  - www:  `145C1588CB12423E0209096835D9041D5B0C5BBA`
+- 公网验证：`curl -I https://tomatobrand.cn` → `HTTP/2 200`，`x-powered-by: Next.js`，`etag: ziesrr2kqyeus`，`content-length: 19550`
+
+### 坑 & 待办
+
+- ⚠️ **阿里云安全组**：添 HTTPS 入站时**容易把 443 写成 433**（相邻数字），加完必须肉眼复查
+- ⚠️ **PM2 启动器**：`pm2 start npm -- start` 会被解析成"找 start 脚本"报错；`start.bat` 包装会让 Node 把 bat 当 JS 解析报 `SyntaxError`。**只能**用 `start.js` 包一层 `child_process.spawn('npm', ['start'], { shell: true, stdio: 'inherit' })`
+- ⚠️ **JKS 废文件**：`C:\tomato-site\certs\` 里还残留第一次下错的 `tomatobrand.cn.jks` + `jks-password.txt` + `25360625_tomatobrand.cn_jks\` 目录，可清理
+- 🔜 **HTTP→HTTPS 跳转**未配：访问 `http://tomatobrand.cn` 不会自动跳到 HTTPS
+- 🔜 **公网端口 3000 / 8080** 仍对 0.0.0.0/0 开放（3000 是 Next.js 残留，8080 用途不明），**应该收回**
+- 🔜 **证书 2026-09-03 到期**：两张 DigiCert DV 免费测试证书，到期前要续期 + 重新导入 + 重新绑定
+- 🔜 **可合并证书**：下次续期把单域名证书合并成多域名证书，只维护一张
+- 🔜 **CI/CD**：未来加 GitHub Actions 或 webhook 触发 `git pull && npm run build && pm2 restart`
+
+## 2026-06-04 改动记录
+
+**功能 / 内容**
+- 字体：英文 `Google Sans` + 中文 `Noto Sans SC`，都 self-hosted via `@font-face`（`public/fonts/`）。详见上方"技术栈"字体行 —— Noto Sans SC 17.7 MB，靠 `unicode-range` 按需加载。
+- Footer：`.footer-grid` 加 `column-gap: 80px`，让 CTA 跟右侧两栏拉开间距。
+- Cursor：换 `tomato-pointer.png`（32×28 番茄蒂剪影，hotspot 16, 2）。详见上方"样式上的坑"。
+
+**架构 / 重构**
+- Hero scene：原 `GooeyMarquee`（黏性模糊大字标题）+ `ParallaxFloating`（motion/react Parallax 容器）删了，换成 `components/hero/css-3d-scene.tsx`（CSS 3D transforms + JS 物理循环 rAF）。中央 LOGO + 6 张番茄图漂浮 + 鼠标点击聚拢（"stir"模式，2s 后回 idle）+ 鼠标移动 → 整 `.world` 倾斜（最大 ±16°）。**纯 CSS 3D + JS，没引 R3F / three.js**。
+- 删 3 个 dead 文件：`components/ui/gooey-marquee.tsx`、`components/ui/parallax-floating.tsx`、`hooks/use-mouse-position-ref.ts`。
+- 删 R3F 依赖：`three` / `@react-three/fiber` / `@react-three/drei` / `@types/three`（连同 59 个 transitive 包）。`package.json` 现在没有 3D 引擎。
+- `app/page.tsx` 清理：去掉手写的 `useEffect` 平滑滚动（`html { scroll-behavior: smooth }` 已经在管了）；清理删掉的 `hero-3d.tsx` 8 行壳子，直接 import `Css3dScene`。
+- `globals.css` 清理：去掉过时的 footer 几何背景、`.diagonal-grid` 等 dead class，精简装饰注释。
+
+**性能 / 质量 review pass**
+- 详见上方"首屏 3D Hero Scene"下的 "2026-06-04 性能 / 质量 review pass" 小节。7 项 fix 已落地，4 项建议明确不采纳（false positive 或收益不抵成本）。
 
 ## 记忆提示（来自过往会话）
 

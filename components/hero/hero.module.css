@@ -1,0 +1,77 @@
+.scene {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  perspective: 1500px;
+  perspective-origin: 50% 50%;
+  background: #ffffff;
+  /* hint the GPU */
+  will-change: transform;
+}
+
+.world {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* JS overrides this on mousemove */
+  transform: rotateX(0deg) rotateY(0deg);
+  will-change: transform;
+}
+
+.element {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* base centering — JS overrides style.transform to add translate3d,
+     so JS must include translate(-50%, -50%) in its output too */
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  /* filter transition kept ultra-short (0.05s) so hover state micro-toggles
+     near the element edge don't visibly snap mid-fade. */
+  transition: filter 0.05s linear;
+  pointer-events: auto;
+}
+
+.element img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* slight dim on far-away elements, brighter on near */
+  filter: drop-shadow(0 12px 24px rgba(60, 30, 10, 0.18));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.element:hover {
+  z-index: 9999 !important;
+}
+
+.element:hover img {
+  /* brightness only — drop-shadow is alpha-based and would re-rasterize
+     every physics frame (transform changes per frame), causing shimmer. */
+  filter: brightness(1.08);
+}
+
+.logo {
+  z-index: 50;
+}
+
+.logo img {
+  filter: drop-shadow(0 16px 32px rgba(60, 30, 10, 0.15));
+  animation: logoBreathe 5s ease-in-out infinite;
+}
+
+/* 6 float keyframes removed — physics is now JS-driven in css-3d-scene.tsx
+   (random drift + center/click attractor + soft boundary). */
+
+@keyframes logoBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo img { animation: none; }
+}
