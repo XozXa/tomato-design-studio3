@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
+import ScrollToTop from "@/components/scroll-to-top"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -38,6 +39,8 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
+        <div className="grid-overlay"></div>
+        <ScrollToTop />
         {children}
         <Analytics />
       </body>

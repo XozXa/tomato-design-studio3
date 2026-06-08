@@ -315,6 +315,86 @@ pm2 restart tomato-site
 **性能 / 质量 review pass**
 - 详见上方"首屏 3D Hero Scene"下的 "2026-06-04 性能 / 质量 review pass" 小节。7 项 fix 已落地，4 项建议明确不采纳（false positive 或收益不抵成本）。
 
+## 2026-06-05 改动记录
+
+**功能 / 内容**
+- 无新功能。把 6/4 改完的 3D hero scene + 字体切换 + cloner 忽略项 commit 进 git（`1964f16`），再跑一轮 3-agent code review 把热路径清掉（`d2ed3fc`）。
+
+**架构 / 重构**
+- `1964f16`（19 文件 +1055/-336）：3D Hero Scene + Google Sans / Noto Sans SC self-hosted + `.gitignore` 加 `/ai-website-cloner-template/`（cloner 在自己的 `.git` 里走）。
+- `d2ed3fc`（6 文件 +85/-70）：review pass 修复。
+
+**性能 / 质量 review pass（2026-06-05）**
+- 三个 agent 并行（reuse / quality / efficiency）。19 项发现，15 真问题，4 false positive。
+- 修了：
+  - **rAF 热路径**（`css-3d-scene.tsx`）：4 处 `Math.hypot` → `Math.sqrt`（speed cap + 2 段碰撞 + flowR）；速度上限和碰撞先比平方距离再 sqrt；`paintAll` 的 `toFixed(2)` × 24/帧 → `Math.round`。
+  - **物理循环**：6 段软边界 if 块抽成 `clampAxis(value, vel, axis, half, k)` helper；5 个 magic number 常量化（`XY_BOUNDARY_K` / `Z_BOUNDARY_K` / `TILT_EASE_K` / `TILT_DEADBAND` / `Z_INDEX_BASE`）；idle 模式 `(attractor - pos) * 0` 整段挪进 `if (attractor)` 分支。
+  - **资源**：12 张作品图加 `loading="lazy"` + `sizes="33vw"`；f3（375px）+ f6（345px）两张最大浮动图在 `floating-config.ts` 标 `priority: true` 跟中央 LOGO 一起预加载。
+  - **去重**：`XHS_URL` 常量（footer 两处）、`--font-stack` CSS 变量（`globals.css` 3 处）、`Z_INDEX_BASE` 统一 `100` 字面量。
+  - **死代码（三个 agent 都没报）**：`app/layout.tsx` 还在用 `next/font/google` 拉 `Space_Grotesk` + `Syne`，但 `globals.css` 早就切到 self-hosted `@font-face` 了，`--font-space-grotesk` / `--font-syne` 没人引用。删掉导入、删 `<html>` 上的 className。
+  - **LCP 优化**：layout `<head>` 加 Google Sans `<link rel="preload" as="font" crossOrigin="anonymous">`；Noto SC 17.7 MB 不预加载（`unicode-range` 守门）。
+  - **GPU 层**：`.scene` 的 `will-change: transform` 删了（`.scene` 自身不变换，`.world` 在内部动）。
+  - 6 段物理循环的 `// 1:` … `// 6:` 阶段标签 + 3 处重复的 `// spin kick — Z axis only (planar images)` 注释删了（顶部那段 Z-axis-only 的 WHY 总览保留）。
+- **明确不修的 4 项 false positive**：`useAnimationFrame` 替换（CLAUDE.md "首屏 3D Hero Scene" 已记不换，整个 useEffect 重写收益有限）、`*` cursor 选择器（CLAUDE.md "样式上的坑" 已记是有意的番茄蒂剪影全局 cursor）、两段碰撞循环合并（球-球 vs 球-AABB，强行抽公共函数数学不一致更乱）、物理 state in `useRef`（rAF 60Hz 直接操作 ref 是标准模式）。
+- `tsc --noEmit` 通过。
+
+## 2026-06-08 改动记录
+
+**功能 / 内容**
+- **项目详情页**：`/projects/[id]` 路由（`app/projects/[id]/page.tsx`）—— 14 个 id（`p1`-`p14`），`generateStaticParams` 从 `data/projects.ts` 派生；命中数据走完整详情页（hero 头图 + 4 列元数据 + 描述中英 + attached 全宽图 + 2 列 gallery），未命中走 "Coming soon" 占位 + 返回首页链接。**不**用 404 —— 后续补数据不用动路由。
+- **数据层**：`data/projects.ts` —— `Project` 类型 + `getProjectById(id)`（`Object.fromEntries` 一次性建表）。14 个项目，p2 (aevum) / p4 (somesome✖️超级猩猩) / p7 (CookieJar) 有完整中英描述 + 全套图，其他 11 个是占位。`ProjectMeta` 字段：`service` / `date` / `industry`（**无 `client`** —— 与 `brand` 100% 重复已删）。
+- **作品集首页重排**：`p1`-`p14` × 14 张作品图（`/1.png`-`/14.png`），网格 3 列 → **4 列**，gap `8px` → `70px`，卡片 `aspect-ratio: 4/5` → `1/1`，`max-width: 1000px` 居中。Tablet (769-1024px) → 3 列；移动端 (≤768px) → 2 列 + gap `12px`。`sizes="25vw"`（之前 3 列的 `33vw` 不再适用）。
+- **导航重做**：固定右侧竖排（`position: fixed; writing-mode: vertical-rl`）→ **sticky 顶部横排**（`position: sticky; top: 0`）。详情页时左侧出现 `router.back()` 返回按钮 + 箭头 icon（`/返回.svg`），首页/About 页是占位。`nav + * { margin-top: 80px }` 给所有相邻兄弟加下边距。
+- **About 页双语化**（`app/about/page.tsx`）：`Services` / `Process` / `Team` 三段全部中英双语，中文为主、英文次之（`.bilingual-en` class，12px / opacity 0.5）。`feature-card` 结构不变，仅文案分层。Footer 保持英文不变。**CC / Leo 名字保留不译**。最新文案（CC：艺术硕士 + 7 年 + 插画商业化；Leo：上市公司前团队负责人 + 消费科技 + 理性→感性品牌语言）。
+- **跨页面滚到顶**：`components/scroll-to-top.tsx` —— 监听 `usePathname()` 变化，effect 里 `window.scrollTo(0, 0)`。挂在 `app/layout.tsx` body 顶部。详情页的"返回"按钮走 `router.back()` 不受干扰。
+
+**架构 / 重构**
+- `app/page.tsx` 瘦身：原来整页内联，现在只保留 Hero (3D scene) + Subtitle + Navbar + Portfolio grid + FooterSection。`handleDistortEnter/Leave` 删了 —— 直接内联到 `FooterSection` 内部。
+- 抽出 4 个 section 组件：`components/sections/footer-section.tsx` / `services-section.tsx` / `process-section.tsx` / `team-section.tsx`。Footer 是 `"use client"`（要 onMouseEnter/Leave 内联函数）；3 个 section 文件是 Server Component（纯静态）。
+- 抽出 `components/navbar.tsx`（client，`usePathname` 判断详情页）+ `components/fade-in.tsx`（client，IntersectionObserver 滚动淡入）。
+- `data/projects.ts` 单独 `data/` 目录，Service 层跟 View 层（`app/page.tsx`）解耦。
+- `app/globals.css` 大改：
+  - `nav`：`display: grid; grid-template-columns: 36px 1fr 36px`（之前 flex + 两个 spacer 占位），`.nav-links { justify-self: center }`。
+  - `.portfolio-grid` 重写（4 列 70px gap 1000px 居中 + 2 段响应式）。
+  - `.project-card` 改 `background: #fff`（之前 `#000`，配合灰度→彩色的 hover 过渡）。
+  - 新增 `.detail-*` 一整套（详情页 hero / meta / gallery grid / attached spacing）+ `.coming-soon` + `.fade-in` 系列 + `.bilingual-en`。
+  - `.detail-images-grid` 移动端 2 列 → 1 列。
+  - mobile nav padding 调到 `15px 20px`，`.nav-links gap` 24px，font 11px。
+
+**3D Hero 调整（2026-06-08）**
+- 6 个常量砍半：`MAX_TILT_DEG` 16→8、`BASE_DRIFT_AMP_XY` 0.9→0.5、`WOBBLE_AMP_XY` 0.45→0.25、`RANDOM_PUSH` 0.4→0.15、`MAX_SPEED` 11→6、`TILT_EASE_K` 0.08→0.04。**WHY**：上一次视觉太抖动（首次滚过 hero 时的观感）。注释块 "Visual intensity halved 2026-06-08" 记在文件顶部，调参时按这个比例缩放。
+- 新增 IntersectionObserver 复位 tilt：scene 离屏时 `tiltTargetRef.current = (0, 0)`，否则鼠标最后位置会让 world 一直偏着、平面 PNG 趋于侧对镜头变成一条线。
+
+**性能 / 质量 review pass（2026-06-08）**
+- 三个 agent 并行（reuse / quality / efficiency），覆盖最近所有未提交的改动（首页重排、详情页、About 双语化、Navbar 重做、3D 调参等）。24 项发现，**13 真问题修了**，12 skipped。
+- 修了（**重点**）：
+  - **rAF 离屏仍在跑**（Efficiency）：3D scene 的 IO 之前只复位 tilt；扩展成 `entry.isIntersecting` 时 `start()`，离屏 `stop()`，物理循环 60Hz 不再烧 CPU。
+  - **Hero 头图 FadeIn 包裹 priority 图**（Efficiency）：`<FadeIn variant="hero">` 的 `.fade-in` 初始 `opacity: 0`，priority 图加载完用户还是要等 1.8s IO 触发才看见 —— 拆掉 FadeIn，让 priority 真正生效。
+  - **作品图 `<a>` 触发整页 nav**（Efficiency）：14 张卡片 `<a href="/projects/...">` → `<Link>`，避免每次点击 reload + 3D 重 init + 14 张图重 fetch。
+  - **`sizes="33vw"` 配 4 列网格**（Efficiency）：→ `25vw`（之前 3 列值）。
+  - **3 页 chrome 复制 + 死节点**（Reuse + Quality）：`<div className="grid-overlay">` 移到 `app/layout.tsx`；`<div className="bg-accents">` 是死节点（无 CSS 规则），3 页都删。
+  - **`onDistortEnter/Leave` 跨 Server/Client 边界**（Reuse）：提到 `FooterSection` 内部（加了 `"use client"`），about/detail 页也自动获得 hover 效果（之前只有首页传了 props）。
+  - **`project.meta.client` 跟 `project.brand` 100% 重复**（Quality）：14 条全删，详情页 title + meta 行都用 `project.brand`。
+  - **每 FadeIn 一个 IntersectionObserver**（Efficiency + Quality）：详情页一个 hero+meta+1 attached+7-8 gallery = 10+ observer。改成模块级共享 observer（`Map<Element, () => void>` 回调表），全页一个 IO。
+  - **`generateStaticParams` 14 行硬编码**（Reuse）：→ `projects.map(p => ({id: p.id}))` 从数据层派生（之前 `projects` 不导出，加了 `export { projects }`）。
+  - **3 个 detail `<Image>` 内联 `style={{width:100%,height:auto}}`**（Reuse）：收编到现有 `.detail-image-full` class（CSS 早就有这个规则，只在 header 上用了）。
+  - **Navbar `<a href="#contact">`**（Reuse）：→ `<Link href="/#contact">`，跨页面也能客户端跳。
+  - **`.nav-back-spacer` flexbox 占位 hack**（Quality）：→ `display: grid; grid-template-columns: 36px 1fr 36px; .nav-links { justify-self: center }`。spacer div 还在 JSX 里（占 36px 网格单元），CSS rule 删了。
+  - **6 个砍半常量没注释**（Quality）：文件顶部加 "Visual intensity halved 2026-06-08" WHY 注释块。
+- **明确不修的 12 项（false positive / 收益不抵成本）**：
+  - 3 个 section 文件抽公共 `<FeatureSection>` —— 60 行 × 3，每段独立可读，抽象成本 > 收益
+  - `TILT_DEADBAND = 0.01` 看似死代码 —— 收敛时仍有作用（unrounded tilt float 在指数衰减尾段跨过 0.01 阈值）
+  - `nav + * { margin-top: 80px }` 隐式耦合 —— 3 个消费者全对
+  - `<Cn en>` 双语 helper、`cn()` 改写 FadeIn、1fr/1.25fr 比例 —— 风格偏好或被共享 IO 重构 moot 掉
+  - `motion/react useInView` 替 FadeIn —— motion 已在 deps 但零 consumer，加进去等于带运行时；共享 observer 更轻
+  - `data/projects.ts` `Object.fromEntries` → `Map` —— 无 perf 差
+  - `pathname?.startsWith("/projects/")` defensive `?? false` —— 实际不会触发，defensive 风格
+  - 详情页"Coming soon"分支运行时是死分支 —— 是 forward-compat（`generateStaticParams` 跟 data 暂时同步，未来加 id 但忘加 data 时不用动路由）
+  - `app/page.tsx` 整体 client → 拆 server/client island —— 改动面大，footer distort 还要传 props
+  - `.detail-attached-image { margin-bottom: 15px }` 依赖 DOM 顺序 —— 只 1 处用
+  - `data/projects.ts` vs `app/page.tsx` `PROJECTS` 数组双源 —— 数据层 + 首页 view-model 故意分开
+- `tsc --noEmit` 通过；4 路由（`/`、`/about`、`/projects/p1`、`/projects/p2`）都 HTTP 200。
+
 ## 记忆提示（来自过往会话）
 
 - 截图→代码的克隆任务，图片分析优先用 **M3（MiniMax-M3）** —— 它做穷举式枚举，而 Claude 原生视觉偏总结式。详见 `feedback_m3_for_clone_tasks.md`，适用于 `ai-website-cloner-template/` 流水线。

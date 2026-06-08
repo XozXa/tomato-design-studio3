@@ -5,19 +5,23 @@ import Image from "next/image"
 import { CENTRAL_LOGO_ASPECT, CENTRAL_LOGO_SRC, CENTRAL_LOGO_WIDTH, FLOATING_ITEMS } from "./floating-config"
 import styles from "./hero.module.css"
 
-const MAX_TILT_DEG = 16
+const MAX_TILT_DEG = 8
 
+// Visual intensity halved 2026-06-08 — previous values (MAX_TILT_DEG=16,
+// MAX_SPEED=11, etc.) felt too jittery on first scroll past. Drift / wobble
+// amplitudes and RANDOM_PUSH scaled in proportion. Keep these in sync when
+// retuning; the 60Hz physics loop reads most of them.
 const BASE_DRIFT_FREQ_X = 0.00028
 const BASE_DRIFT_FREQ_Y = 0.00032
 const BASE_DRIFT_FREQ_Z = 0.00024
-const BASE_DRIFT_AMP_XY = 0.9
+const BASE_DRIFT_AMP_XY = 0.5
 const BASE_DRIFT_AMP_Z = 0.6
 const WOBBLE_FREQ = 0.0055
-const WOBBLE_AMP_XY = 0.45
+const WOBBLE_AMP_XY = 0.25
 const WOBBLE_AMP_Z = 0.25
-const RANDOM_PUSH = 0.4
+const RANDOM_PUSH = 0.15
 const DAMPING = 0.94
-const MAX_SPEED = 11
+const MAX_SPEED = 6
 const EDGE_PAD = 200
 const HALF_Z = 300
 const XY_BOUNDARY_K = 0.06
@@ -46,9 +50,8 @@ const SWIRL_KICK = 14
 const SWIRL_FALLOFF = 250
 const STIR_PULL = 0.004
 const STIR_DURATION_MS = 2000
-const TILT_EASE_K = 0.08
+const TILT_EASE_K = 0.04
 const TILT_DEADBAND = 0.01
-
 interface Vec3 { x: number; y: number; z: number }
 interface Vec2 { x: number; y: number }
 interface State {
@@ -394,9 +397,28 @@ export function Css3dScene() {
     scene.addEventListener("click", onClick)
     document.addEventListener("visibilitychange", onVisibility)
 
+    // Reset tilt and pause the rAF physics loop when the scene scrolls out
+    // of view — otherwise (1) the last mouse position keeps pulling the
+    // world toward a tilted state so flat PNGs end up edge-on, and (2) the
+    // 60Hz loop burns CPU for a scene the user can't see.
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          start()
+        } else {
+          tiltTargetRef.current.x = 0
+          tiltTargetRef.current.y = 0
+          stop()
+        }
+      },
+      { threshold: 0 }
+    )
+    io.observe(scene)
+
     return () => {
       stop()
       ro.disconnect()
+      io.disconnect()
       scene.removeEventListener("mousemove", onMove)
       scene.removeEventListener("mouseleave", onLeave)
       scene.removeEventListener("click", onClick)
@@ -423,6 +445,7 @@ export function Css3dScene() {
               height={item.width}
               unoptimized
               draggable={false}
+              style={{ width: "100%", height: "auto" }}
               {...(item.priority && { priority: true })}
             />
           </div>
@@ -444,6 +467,7 @@ export function Css3dScene() {
             priority
             draggable={false}
             className={styles.logo}
+            style={{ width: "100%", height: "auto" }}
           />
         </div>
       </div>
