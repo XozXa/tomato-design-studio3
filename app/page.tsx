@@ -52,7 +52,7 @@ export default function Page() {
           <div className="portfolio-grid">
             {PROJECTS.map((p) => (
               <Link key={p.id} href={`/projects/${p.id}`} className="project-card" id={p.id}>
-                <Image src={p.src} alt={p.alt} className="project-image" width={400} height={400} sizes="25vw" loading="lazy" unoptimized />
+                <Image src={p.src} alt={p.alt} className="project-image" width={400} height={400} sizes="25vw" loading="lazy" />
               </Link>
             ))}
           </div>

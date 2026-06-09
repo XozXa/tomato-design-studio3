@@ -36,7 +36,6 @@ export default async function ProjectPage({ params }: Props) {
               width={3750}
               height={2495}
               priority
-              unoptimized
               className="detail-image-full"
             />
           </FadeIn>
@@ -80,7 +79,6 @@ export default async function ProjectPage({ params }: Props) {
                 width={3750}
                 height={5000}
                 loading="lazy"
-                unoptimized
                 className="detail-image-full"
               />
             </FadeIn>
@@ -95,7 +93,6 @@ export default async function ProjectPage({ params }: Props) {
                   width={3750}
                   height={5000}
                   loading="lazy"
-                  unoptimized
                   className="detail-image-full"
                 />
               </FadeIn>

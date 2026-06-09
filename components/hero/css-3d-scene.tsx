@@ -443,7 +443,6 @@ export function Css3dScene() {
               alt=""
               width={item.width}
               height={item.width}
-              unoptimized
               draggable={false}
               style={{ width: "100%", height: "auto" }}
               {...(item.priority && { priority: true })}
@@ -463,7 +462,6 @@ export function Css3dScene() {
             alt="Tomato Design"
             width={CENTRAL_LOGO_WIDTH}
             height={Math.round(CENTRAL_LOGO_WIDTH * CENTRAL_LOGO_ASPECT)}
-            unoptimized
             priority
             draggable={false}
             className={styles.logo}
