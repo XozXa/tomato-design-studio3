@@ -17,7 +17,7 @@ export default function Navbar() {
           className="nav-back-button"
           aria-label="返回上一页"
         >
-          <img src="/返回.svg" alt="" width={20} height={20} />
+          <img src="/back.svg" alt="" width={20} height={20} />
         </button>
       ) : (
         <div className="nav-back-spacer" />
