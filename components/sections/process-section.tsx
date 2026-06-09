@@ -3,10 +3,7 @@ export default function ProcessSection() {
     <section id="process" className="section-block">
       <div className="section-header">
         <h2 className="section-title">
-          清晰的三步流程：从需求到交付。
-          <span className="bilingual-en">
-            A clear, three-step path from brief to delivery.
-          </span>
+          合作流程<span className="bilingual-en">Process</span>
         </h2>
         <p className="section-intro">
           流程精简透明，每一步都有明确输出，品牌方始终清楚项目进展。

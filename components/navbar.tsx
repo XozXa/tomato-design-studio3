@@ -25,7 +25,7 @@ export default function Navbar() {
       <div className="nav-links">
         <Link href="/">Work</Link>
         <Link href="/about">About</Link>
-        <Link href="/#contact">Contact</Link>
+        <a href="#contact">Contact</a>
       </div>
       <div className="nav-back-spacer" />
     </nav>

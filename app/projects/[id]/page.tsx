@@ -29,15 +29,17 @@ export default async function ProjectPage({ params }: Props) {
 
       {project ? (
         <article className="project-detail">
-          <Image
-            src={project.assets.header}
-            alt={project.brand}
-            width={3750}
-            height={2495}
-            priority
-            unoptimized
-            className="detail-image-full"
-          />
+          <FadeIn variant="hero">
+            <Image
+              src={project.assets.header}
+              alt={project.brand}
+              width={3750}
+              height={2495}
+              priority
+              unoptimized
+              className="detail-image-full"
+            />
+          </FadeIn>
 
           <FadeIn>
             <section className="detail-meta-section">

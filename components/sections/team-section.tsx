@@ -3,10 +3,7 @@ export default function TeamSection() {
     <section id="atelier" className="section-block">
       <div className="section-header">
         <h2 className="section-title">
-          核心团队。每个项目背后的双手。
-          <span className="bilingual-en">
-            Core Team. The hands behind every project.
-          </span>
+          核心团队<span className="bilingual-en">Core Team</span>
         </h2>
         <p className="section-intro">
           精简资深双人组，一偏插画、一偏产品，两个视角，一个工作室的声音。

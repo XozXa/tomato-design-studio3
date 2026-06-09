@@ -3,10 +3,7 @@ export default function ServicesSection() {
     <section id="services" className="section-block">
       <div className="section-header">
         <h2 className="section-title">
-          为品牌全生命周期量身打造的服务。
-          <span className="bilingual-en">
-            Services tailored to the full lifecycle of a brand.
-          </span>
+          服务内容<span className="bilingual-en">Services</span>
         </h2>
         <p className="section-intro">
           从第一笔草图到最终上架，我们覆盖年轻品牌从启动、成长到保持差异化所需的视觉表面。
