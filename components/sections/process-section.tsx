@@ -1,57 +1,45 @@
+const PROCESS = [
+  {
+    no: "01",
+    nameCn: "前期沟通",
+    nameEn: "Preliminary communication",
+    items: ["了解需求", "确定报价和排期", "合同签署", "支付定金"],
+  },
+  {
+    no: "02",
+    nameCn: "中期设计",
+    nameEn: "Mid-term design",
+    items: ["深入了解需求", "项目风格调研", "方案产出", "优化沟通", "确认方向"],
+  },
+  {
+    no: "03",
+    nameCn: "后期交付",
+    nameEn: "Later delivery",
+    items: ["敲定方案", "支付尾款", "交付最终文件", "协助落地", "项目完结"],
+  },
+] as const
+
 export default function ProcessSection() {
   return (
     <section id="process" className="section-block">
       <div className="section-header">
-        <h2 className="section-title">
-          合作流程<span className="bilingual-en">Process</span>
-        </h2>
-        <p className="section-intro">
-          流程精简透明，每一步都有明确输出，品牌方始终清楚项目进展。
-          <span className="bilingual-en">
-            We keep the process lean and transparent — every step has a defined output, so the brand always knows where the project stands.
-          </span>
-        </p>
+        <h2 className="section-title">Process</h2>
       </div>
       <div className="feature-grid feature-grid-3">
-        <div className="feature-card">
-          <span className="feature-number">01</span>
-          <h3 className="feature-name">
-            前期咨询
-            <span className="bilingual-en">Consultation</span>
-          </h3>
-          <p className="feature-desc">
-            初步沟通 · 明确设计目标 · 确认报价与时间 · 签订合同 · 支付定金
-            <span className="bilingual-en">
-              Initial Communication · Define Design Goals · Confirm Quote &amp; Timeline · Sign Contract · Pay Deposit
-            </span>
-          </p>
-        </div>
-        <div className="feature-card">
-          <span className="feature-number">02</span>
-          <h3 className="feature-name">
-            项目启动
-            <span className="bilingual-en">Project Kickoff</span>
-          </h3>
-          <p className="feature-desc">
-            深度需求对接 · 市场调研 · 风格定位 · 视觉方向讨论 · 方向确认
-            <span className="bilingual-en">
-              Deep Dive into Requirements · Market Research · Style Positioning · Visual Direction Discussion · Confirm Direction
-            </span>
-          </p>
-        </div>
-        <div className="feature-card">
-          <span className="feature-number">03</span>
-          <h3 className="feature-name">
-            执行落地
-            <span className="bilingual-en">Execution</span>
-          </h3>
-          <p className="feature-desc">
-            设计创作 · 方案提案 · 反馈与优化 · 文件交付 · 售后支持
-            <span className="bilingual-en">
-              Design Creation · Proposal Presentation · Feedback &amp; Refinement · Deliver Files · Follow-up Support
-            </span>
-          </p>
-        </div>
+        {PROCESS.map((p) => (
+          <div key={p.no} className="feature-card">
+            <span className="feature-number">{p.no}</span>
+            <h3 className="feature-name">
+              {p.nameCn}
+              <span className="bilingual-en">{p.nameEn}</span>
+            </h3>
+            <ul className="feature-list">
+              {p.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   )

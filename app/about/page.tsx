@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Navbar from "@/components/navbar"
+import AboutIntroSection from "@/components/sections/about-intro-section"
 import ServicesSection from "@/components/sections/services-section"
 import ProcessSection from "@/components/sections/process-section"
 import TeamSection from "@/components/sections/team-section"
@@ -16,9 +17,10 @@ export default function AboutPage() {
     <>
       <Navbar />
       <div className="container">
+        <AboutIntroSection />
+        <TeamSection />
         <ServicesSection />
         <ProcessSection />
-        <TeamSection />
         <FooterSection />
       </div>
     </>

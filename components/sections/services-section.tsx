@@ -1,70 +1,51 @@
+const SERVICES = [
+  {
+    no: "01",
+    nameCn: "品牌设计",
+    nameEn: "Brand Design",
+    items: ["品牌视觉搭建", "品牌LOGO设计", "VI视觉识别系统", "动态设计"],
+  },
+  {
+    no: "02",
+    nameCn: "包装设计",
+    nameEn: "Packaging Design",
+    items: ["产品包装设计", "产品外观设计", "包装建模渲染", "包装插画设计"],
+  },
+  {
+    no: "03",
+    nameCn: "IP 设计",
+    nameEn: "IP Design",
+    items: ["IP形象设计", "IP服装动作场景延展", "IP建模渲染", "IP应用物料延展"],
+  },
+  {
+    no: "04",
+    nameCn: "活动视觉",
+    nameEn: "Event Visuals",
+    items: ["主kv设计", "插画设计", "电商设计", "运营海报"],
+  },
+] as const
+
 export default function ServicesSection() {
   return (
     <section id="services" className="section-block">
       <div className="section-header">
-        <h2 className="section-title">
-          服务内容<span className="bilingual-en">Services</span>
-        </h2>
-        <p className="section-intro">
-          从第一笔草图到最终上架，我们覆盖年轻品牌从启动、成长到保持差异化所需的视觉表面。
-          <span className="bilingual-en">
-            From the first sketch to the final shelf, we cover the visual surface area a young brand needs to launch, grow, and stay distinct.
-          </span>
-        </p>
+        <h2 className="section-title">Services</h2>
       </div>
       <div className="feature-grid feature-grid-4">
-        <div className="feature-card">
-          <span className="feature-number">01</span>
-          <h3 className="feature-name">
-            品牌设计
-            <span className="bilingual-en">Brand Design</span>
-          </h3>
-          <p className="feature-desc">
-            视觉识别、Logo 设计、品牌规范。
-            <span className="bilingual-en">
-              Visual Identity, Logo Design, and Brand Guidelines.
-            </span>
-          </p>
-        </div>
-        <div className="feature-card">
-          <span className="feature-number">02</span>
-          <h3 className="feature-name">
-            包装设计
-            <span className="bilingual-en">Packaging Design</span>
-          </h3>
-          <p className="feature-desc">
-            产品包装与开箱体验。
-            <span className="bilingual-en">
-              Product Packaging and Unboxing Experience.
-            </span>
-          </p>
-        </div>
-        <div className="feature-card">
-          <span className="feature-number">03</span>
-          <h3 className="feature-name">
-            IP 设计
-            <span className="bilingual-en">IP Design</span>
-          </h3>
-          <p className="feature-desc">
-            角色设计与 IP 生态。
-            <span className="bilingual-en">
-              Character Design and IP Ecosystems.
-            </span>
-          </p>
-        </div>
-        <div className="feature-card">
-          <span className="feature-number">04</span>
-          <h3 className="feature-name">
-            活动视觉
-            <span className="bilingual-en">Event Visuals</span>
-          </h3>
-          <p className="feature-desc">
-            展览、海报与空间视觉。
-            <span className="bilingual-en">
-              Exhibitions, Posters, and Spatial Visuals.
-            </span>
-          </p>
-        </div>
+        {SERVICES.map((s) => (
+          <div key={s.no} className="feature-card">
+            <span className="feature-number">{s.no}</span>
+            <h3 className="feature-name">
+              {s.nameCn}
+              <span className="bilingual-en">{s.nameEn}</span>
+            </h3>
+            <ul className="feature-list">
+              {s.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   )
