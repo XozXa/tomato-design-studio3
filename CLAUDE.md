@@ -395,6 +395,35 @@ pm2 restart tomato-site
   - `data/projects.ts` vs `app/page.tsx` `PROJECTS` 数组双源 —— 数据层 + 首页 view-model 故意分开
 - `tsc --noEmit` 通过；4 路由（`/`、`/about`、`/projects/p1`、`/projects/p2`）都 HTTP 200。
 
+## 2026-06-09 改动记录
+
+**功能 / 内容**
+- About 三个 section 标题从「中文长句 + 英文长句」改成 4 字中文 + 紧凑英文双语：`服务内容 / Services`、`合作流程 / Process`、`核心团队 / Core Team`。下面 `section-intro` 双语段落保留作为展开。
+- Navbar Contact 链接修复：`components/navbar.tsx` 把 `<Link href="/#contact">` 换成原生 `<a href="#contact">`。Next.js `Link` 走 `pushState`，`/` 跳到 `/#contact` 时不触发浏览器原生 hash 滚动 —— 在 About 页面会先 pushState 回首页再滚到 footer（同页锚点本应直接滚到本页 footer，因为 About 也包含 `<FooterSection id="contact">`）。改成原生 `<a href="#contact">` 后，浏览器原生 hash 滚动 + `html { scroll-behavior: smooth }` 接管，两页都直接滚到当前页 footer。
+
+**架构 / 重构**
+- 详情页入场动画更明显（`app/globals.css` `.fade-in` 系列 + `app/projects/[id]/page.tsx`）：
+  - 头图加 `<FadeIn variant="hero">` 包裹（之前是无包裹，让 priority 图 LCP 立即可见；现在用户接受 1.0-1.2s 的 opacity 代价换取"明显"）。
+  - 默认 `.fade-in`：Y 16→40px + scale 0.98→1，1.5s→1.0s 用 `cubic-bezier(0.16, 1, 0.3, 1)`（开始快、收尾柔和）。
+  - hero 变体：Y 56→60px + scale 1.03→1.04，1.8s→1.2s。
+  - 通用规则：`.fade-in--visible` 的 `transform` 加 `scale(1)`，确保默认变体的 scale 也能走 transition 落位。
+- 详情页与导航的间距归零（`app/globals.css` `.project-detail`）：`margin-top: 0` 覆盖 `nav + * { margin-top: 80px }` 的全局规则，首页/About 仍吃 80px 呼吸空间，详情页头图直接顶在 nav 下面（hero 沉浸感）。
+
+**部署（首次正式上线新代码）**
+- 5 个 commit 通过 `git pull` 落到 ECS `C:\tomato-site`：`1964f16`（3D hero + 字体）/ `d2ed3fc`（3D 热路径 polish）/ `f469737`（详情页 + About 双语 + nav 重做）/ `c12cace`（133 张详情页 PNG，**522 MB**）/ `6340e49`（今天的 polish）。
+- 服务器首次清理：`git restore package-lock.json`（丢弃上次 npm install 留下的本地 lock 改动）+ `git pull origin main`。
+- `npm install`：up to date in 2s（node_modules 已含 motion）。
+- `npm run build`：18/18 静态页生成（`/` `/about` 静态 + `/projects/[id]` SSG 14 个路径）。
+- `pm2 restart tomato-site`：online，45.8 MB。
+- 验证全链：
+  - 本机 `curl.exe -I http://127.0.0.1:3000` → HTTP/1.1 200, `x-nextjs-prerender: 1`
+  - 公网 `curl -I https://tomatobrand.cn/projects/p2` → HTTP/2 200, `x-powered-by: Next.js, ARR/3.0`, `x-nextjs-prerender: 1`
+- **新踩坑**（已记）：Windows PowerShell 把 `curl` 别名到 `Invoke-WebRequest`，跑 `curl -I http://...` 会报 `Uri:` 缺参。必须用 `curl.exe` 调真正的 curl 二进制（ECS 自带的 Git for Windows / curl-for-Windows 都行）。
+- **遗留 3 件后事**（**不**在今天范围）：
+  1. `.gitignore` 加 `/certs/`（PFX 证书 + 密码 txt）/ `/start.js` / `/start.bat` —— 防止敏感文件被误 commit。本地（macOS）改完 push，下次部署生效。
+  2. `del start.bat`（CLAUDE.md 已知是 Node 解析失败的废包装）。
+  3. 证书 2026-09-03 到期续期 + 合并双域名证书。
+
 ## 记忆提示（来自过往会话）
 
 - 截图→代码的克隆任务，图片分析优先用 **M3（MiniMax-M3）** —— 它做穷举式枚举，而 Claude 原生视觉偏总结式。详见 `feedback_m3_for_clone_tasks.md`，适用于 `ai-website-cloner-template/` 流水线。
