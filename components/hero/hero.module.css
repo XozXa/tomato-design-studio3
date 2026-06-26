@@ -6,10 +6,12 @@
   perspective: 1500px;
   perspective-origin: 50% 50%;
   background: #ffffff;
-  /* Mobile: hand the scene over to pointer events so pointermove / pointerdown
-     (used by the physics loop) aren't pre-empted by pan / scroll gestures.
-     The user exits the hero by scrolling from outside the scene. */
-  touch-action: none;
+  /* Mobile: keep vertical scroll working so the user can swipe out of
+     the hero without having to drag past its edge. Horizontal pointer
+     drag still feeds the tilt loop (pan-y disables other panning
+     directions), and tap still triggers stir. None / manipulation
+     were tried first — both blocked page scroll and trapped users. */
+  touch-action: pan-y;
 }
 
 .world {
