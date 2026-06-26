@@ -67,7 +67,7 @@ ai-website-cloner-template/   # 独立的子项目（截图→代码流水线）
 
 > 历史：`gooey-marquee.tsx`（标题区黏性模糊大字，`filter: contrast(15) + blur(0.03em)`）和 `parallax-floating.tsx`（基于 motion/react 的 Parallax 容器）都曾用在首屏，2026-06-03 改用首屏 3D 场景后**已删除**。git 历史里可以找回参考实现。
 
-## 首屏 3D Hero Scene（2026-06-03 新增；2026-06-04 性能 review）
+## 首屏 3D Hero Scene（2026-06-03 新增；2026-06-04 性能 review；2026-06-26 加移动端适配）
 
 首屏从「`GooeyMarquee` 大字标题」改成「中央 LOGO + 6 张番茄图自由漂浮 + 鼠标点击聚拢」的交互式场景。**没用 R3F/three.js**，纯 CSS 3D transforms + JS 物理循环，bundle 几乎零增量。
 
@@ -109,29 +109,43 @@ ai-website-cloner-template/   # 独立的子项目（截图→代码流水线）
 | `idle` | 默认 | 无中心引力，元素靠轨道流 + 漂移自由循环 |
 | `stir` | 鼠标点击 scene | 每个元素获得切向脉冲（vortex around click point，距离衰减），同时向点击点施加 `STIR_PULL * (1 - elapsed/STIR_DURATION_MS)` 的中心引力；`STIR_DURATION_MS` 后回 `idle` |
 
-**关键常数（`css-3d-scene.tsx` 顶部）**：
+**关键常数（`css-3d-scene.tsx` 顶部，组件函数内从 `isMobile` state 派生）**：
 ```ts
-const MAX_TILT_DEG = 16
-const RANDOM_PUSH = 0.4
-const DAMPING = 0.94
-const MAX_SPEED = 11
-const ORBIT_CW_K = 0.05
-const Z_FLOW = 0.05
-const SWIRL_KICK = 14         // click 漩涡初速
-const SWIRL_FALLOFF = 250     // 距离衰减尺度
-const STIR_PULL = 0.004       // stir 模式中心引力（线性衰减）
-const STIR_DURATION_MS = 2000 // stir 持续时间
+// 桌面端（2026-06-08 砍半后 + 2026-06-26 再砍前的值）
+// 移动端（≤768px，2026-06-26 砍半）值用 ? 列出
+const MAX_TILT_DEG        = isMobile ? 4   : 8   // 鼠标/触屏 tilt 上限
+const RANDOM_PUSH         = isMobile ? 0.08: 0.15
+const DAMPING             = 0.94
+const MAX_SPEED           = isMobile ? 3   : 6
+const ORBIT_CW_K          = 0.05
+const Z_FLOW              = 0.05
+const SWIRL_KICK          = isMobile ? 8   : 14  // click 漩涡初速
+const SWIRL_FALLOFF       = 250                   // 距离衰减尺度
+const STIR_PULL           = 0.004                 // stir 模式中心引力（线性衰减）
+const STIR_DURATION_MS    = 2000                  // stir 持续时间
+const TILT_EASE_K         = isMobile ? 0.025: 0.04
+const EDGE_PAD            = isMobile ? 60  : 200
+const HALF_Z              = isMobile ? 200 : 300
+const BASE_DRIFT_AMP_XY   = isMobile ? 0.25: 0.5
+const WOBBLE_AMP_XY       = isMobile ? 0.12: 0.25
+const INIT_JITTER_XY      = isMobile ? 30  : 70
+const INIT_JITTER_Z       = isMobile ? 80  : 150
+const LOGO_WIDTH          = isMobile ? 240 : 600
 ```
+
+`isMobile` 由 `useState(false)` + mount effect 读 `window.matchMedia("(max-width: 768px)").matches` 决定。**WHY 不用模块顶层 const**：模块顶层在 SSR 时 `typeof window === "undefined"` → 永远 false → server 渲染 desktop markup；client hydrate 时 matchMedia 可用 → 移动命中 → 渲染 mobile → hydration mismatch。useState 延迟方案让 SSR + 首次 hydrate 都是 desktop 一致，mount 后 setIsMobile(true) 触发 re-render + 物理 useEffect 重跑（deps `[isMobile]`）。详见下方"2026-06-26 移动端适配"和章节"2026-06-26 改动记录（Hero 3D 移动端适配）"。
 
 ### 元素初始位置（`floating-config.ts`）
 
-每个元素配 `{ x, y, z, width, rot, src }`：
+桌面端 6 个元素配 `{ x, y, z, width, rot, src }`：
 - `x/y` 是相对场景中心的 px 偏移；`RADIUS=480, Y_SPAN=300` 让 6 张图散布到视口四角
-- `z` 配置里当前**全设为 0**（避免透视投影让远处元素视觉上偏向中央），但**初始化时每个元素会再叠 `±150` px 的随机 z 偏移**（见 `css-3d-scene.tsx` 中 `pos.z = (Math.random() - 0.5) * 300`），让每次刷新 z 分布不同
+- `z` 配置里当前**全设为 0**（避免透视投影让远处元素视觉上偏向中央），但**初始化时每个元素会再叠 `±150` px 的随机 z 偏移**（见 `css-3d-scene.tsx` 中 `pos.z = (Math.random() - 0.5) * 2 * INIT_JITTER_Z`），让每次刷新 z 分布不同
 - `width` 在 270-375 之间，`rot` 在 ±12° 之间
-- 初始时还会叠 `±140` px 的 xy 随机偏移 + `±0.8` 的随机初速度，保证每次刷新形状不同
+- 初始时还会叠 `±70` px 的 xy 随机偏移 + `±0.8` 的随机初速度，保证每次刷新形状不同
 
-中央 LOGO 单独硬编码：`CENTRAL_LOGO_SRC = "番茄们 logo3.png"`，`CENTRAL_LOGO_WIDTH = 600`，`CENTRAL_LOGO_ASPECT = 0.3`（高 = 宽 × 0.3）。
+**移动端**用 `MOBILE_FLOATING_ITEMS`：同 src/rot/x/y/z 比例，`MOBILE_RADIUS=180` / `MOBILE_Y_SPAN=120` 替代桌面 480/300，width 缩到 145-190 区间。中央 LOGO `MOBILE_LOGO_WIDTH=240`（桌面 600）。物理初始化 jitter 也按断点缩（`INIT_JITTER_XY` 70→30, `INIT_JITTER_Z` 150→80）。
+
+中央 LOGO：`CENTRAL_LOGO_SRC = "/hero-logo.png"`，`LOGO_WIDTH = isMobile ? 240 : 600`，`CENTRAL_LOGO_ASPECT = 0.3`（高 = 宽 × 0.3）。
 
 ### 已踩过的坑
 
@@ -141,14 +155,27 @@ const STIR_DURATION_MS = 2000 // stir 持续时间
 - ⚠️ **场景必须铺满首屏**：原本 Hero 在 `.container`（max-width 1200px）里，3D 场景被夹在中间两侧留白。现在专门加了 `.hero-3d-section { width: 100%; height: 100vh; }` 在 `.container` **外面**，才铺满。
 - ✅ **Z 轴自转只用 rotate（X/Y 不要用）**：图片是平面 PNG，绕 X/Y 旋转会侧面对相机变成一条线。`css-3d-scene.tsx` 里只写 `rotate(Z)`，碰撞的 spin kick 也只往 Z 注入。
 - ✅ **资产命名（中文 + 全角空格）OK**：`番茄们 logo3.png` / `番茄们 浮动元素1.png` 等，Next.js 的 `<Image>` + 静态文件 handler 能自动处理，不需要 `encodeURI()`。
+- ⚠️ **模块顶层不能用 `window` / `matchMedia` / `Date.now()` / `Math.random()`**：在 SSR 跟 client hydrate 表现不一致，会导致 hydration mismatch。**必须**用 `useState` 初值 + mount effect 延迟读取。client component 也一样要遵循此规则（React 19 server component 不会跑，但 client component 仍然走 SSR → hydrate 流程）。详见 2026-06-26 改动记录。
+- ✅ **`touch-action: pan-y` 而非 `none`**：mobile 场景里 `none` 是"全场 sandbox"，会拦截 vertical scroll；用 `pan-y` 让浏览器接管 vertical pan，pointer events 处理其他方向。
 
 ### 验证
 
+桌面端：
 - `tsc --noEmit` 通过
 - 6/7 元素每帧 transform 改变（中央 LOGO 不动）
 - 点击 scene 任意位置 → 6 张图获得切向脉冲，沿漩涡方向飞散，`STIR_DURATION_MS` (2s) 内逐步回 `idle`
-- 鼠标移动 → 整个 `.world` 跟随倾斜（最大 ±16°），离开 scene 自动回正
+- 鼠标移动 → 整个 `.world` 跟随倾斜（最大 ±8°），离开 scene 自动回正
 - 切到其他 tab → RAF 自动暂停（`visibilitychange` 监听），不耗电
+
+移动端（DevTools iPhone 12 Pro 390×844 模拟 / 真机）：
+- `tsc --noEmit` 通过
+- Console **无红字 hydration error**（React 不再报 server / client markup 不匹配）
+- 6 张浮动图 width 145-190、LOGO 240px，**全部不超出 viewport**
+- 单指拖动 scene → `.world` 跟随倾斜（最大 ±4°）
+- tap scene → 6 张图聚拢漩涡飞散（stir 模式 2s）
+- 上下 swipe scene → **页面流畅滚出 hero**（`touch-action: pan-y` 让 vertical scroll 浏览器接管）
+- 旋转屏幕（portrait ↔ landscape）→ ResizeObserver 刷新 rect，元素仍在边界内
+- 切到其他 tab → RAF 自动暂停
 
 ### 2026-06-04 性能 / 质量 review pass
 
@@ -167,6 +194,21 @@ const STIR_DURATION_MS = 2000 // stir 持续时间
 - 不统一两段碰撞循环 —— 球-球 vs 球-AABB，强行抽象更乱
 - 不优化 `Math.hypot` / 不加 6 元素空间 culling / 不管 `toFixed` 分配 —— 量太小
 - 不拆 `page.tsx` 的 server / client component —— 改动面太大
+
+### 2026-06-26 移动端适配
+
+在 ≤768px viewport 上自适应，desktop 配置不变。完整改动见下方"## 2026-06-26 改动记录（Hero 3D 移动端适配）"，这里只列关键决策：
+
+- **数据层**：`floating-config.ts` 新增 `MOBILE_FLOATING_ITEMS`（width 145-190）+ `MOBILE_LOGO_WIDTH=240`，同桌面组共用 src/rot/x/y 比例。
+- **物理层**：11 个常量按 `isMobile` 二选一，全部比桌面再砍半（2026-06-08 已砍过一次）。理由：物理参数是绝对像素值，viewport 缩 60% 后同样振幅看起来抖。
+- **状态层**：模块顶层 `const isMobile = matchMedia(...)` 改为组件内 `useState(false)` + mount effect；物理 useEffect deps 改 `[isMobile]` —— state 变触发 cleanup + re-seed + restart rAF。**WHY**：模块顶层在 SSR 时 `typeof window === "undefined"` → 永远 false → 跟 client hydrate 命中移动时的 markup 对不上 → React hydration mismatch。
+- **事件层**：在 mouse 事件之外**额外绑** `pointermove`/`pointerdown`/`pointerleave`，`setPointerCapture` 让手指拖出 scene 边界仍响应。mouse 事件保留作为桌面端老浏览器 defensive fallback。
+- **CSS 层**：`.scene { touch-action: pan-y }`（不是 `none`）—— 保留 vertical scroll 给浏览器，pointer events 处理其他方向 + 触屏 tilt + tap stir。`@media (max-width: 768px)` 块内 `.hero-3d-section` 100vh→85vh，`.scene` perspective 1500px→900px。
+
+**踩到的坑**（详见 2026-06-26 改动记录）：
+- ⚠️ **模块顶层 `matchMedia` → hydration mismatch**：必须 useState 延迟。
+- ✅ **`touch-action: pan-y` 而非 `none`**：`none` 把 vertical scroll 也吃掉了，用户反馈"上下 swipe 卡"。
+- ✅ **不引入 CSS variable 方案**：matchMedia + state 在 React 里更直接，少一层 CSS ↔ JS 反向通信。
 
 ## 样式上的坑
 
@@ -461,6 +503,47 @@ commit `0fdffe0`，6 文件改 / 新增 1 文件。**未**部署到 ECS。
 
 **部署**
 - `0fdffe0` 已 `git push origin main`，**未**部署到 ECS。要部署按既定流程：`cd C:\tomato-site && git pull && npm run build && pm2 restart tomato-site`。
+
+## 2026-06-26 改动记录（Hero 3D 移动端适配）
+
+2 个 commit，已 push origin main，已部署到 ECS。
+
+**功能 / 内容**
+- Hero 3D 场景从桌面单一配置扩成桌面 + 移动两组，在 ≤768px viewport 自动切换。`matchMedia("(max-width: 768px)")` 决定走哪一组：
+  - **元素尺寸**：`MOBILE_FLOATING_ITEMS`（width 145-190px 替代 270-375px），`MOBILE_LOGO_WIDTH=240`（替代 600px）。`floating-config.ts` 里 `MOBILE_RADIUS=180` / `MOBILE_Y_SPAN=120` 替代桌面 480/300，构图比例一致。
+  - **物理参数全部再砍半**（2026-06-08 已经砍过一次）：`MAX_TILT_DEG` 8→4, `MAX_SPEED` 6→3, `BASE_DRIFT_AMP_XY` 0.5→0.25, `WOBBLE_AMP_XY` 0.25→0.12, `RANDOM_PUSH` 0.15→0.08, `EDGE_PAD` 200→60, `HALF_Z` 300→200, `SWIRL_KICK` 14→8, `TILT_EASE_K` 0.04→0.025。理由：物理参数是绝对像素值，viewport 缩了 60% 后同样振幅看起来抖。
+  - 初始化 jitter 缩：xy ±70→±30, z ±150→±80。
+  - **视角**：`@media (max-width: 768px)` 块内 `.hero-3d-section` 100vh→85vh，`.scene` perspective 1500px→900px。
+- **touch 事件支持**：在原有 mouse 事件（mousemove/leave/click）之外**额外绑** `pointermove`/`pointerdown`/`pointerleave`，`setPointerCapture` 让手指拖出 scene 边界仍响应。mouse 事件保留作为桌面端老浏览器 defensive fallback（CLAUDE.md 反复强调的"故意保留的多份逻辑"风格）。
+
+**架构 / 重构**
+- `components/hero/floating-config.ts`：
+  - `CENTRAL_LOGO_WIDTH` 重命名为 `DESKTOP_LOGO_WIDTH`（更准确，反映存在 mobile 对应物）。
+  - 新增 `MOBILE_FLOATING_ITEMS`（同 src/rot/x/y/z 比例，width 缩 ~0.5×）+ `MOBILE_LOGO_WIDTH = 240`。
+- `components/hero/css-3d-scene.tsx`：
+  - **模块顶层 `const isMobile = matchMedia(...)` 改为组件函数内 `useState(false)` + mount effect**。WHY：模块顶层在 SSR 时 `typeof window === "undefined"` → 永远 false → server 渲染 desktop markup；client hydrate 时 matchMedia 可用 → 移动命中 → 渲染 mobile markup → 两边 markup 对不上 → React 报 hydration mismatch。**useState 延迟方案**：SSR + 首次 hydrate 都用 desktop 一致 ✓ → mount effect 跑完 `setIsMobile(true)` → 触发 re-render + 物理 useEffect 重跑（deps 改 `[isMobile]`）。
+  - 物理 useEffect deps 从 `[]` 改为 `[isMobile]`，isMobile 变 → cleanup（停 rAF / 解绑事件 / disconnect IO+RO）→ re-seed states + restart rAF + 重新绑事件。**WHY 记下**：物理参数从 state 派生时，rAF 闭包捕获的是启动那一刻的 const，state 变必须重启闭包才能读到新值。
+  - 提取 `updateTilt(x, y)` + `triggerStir(x, y)` helper，桌面 `onMove` / `onClick` 和移动 `onPointerMove` / `onPointerDown` 都复用同一函数，**不要**写两份实现。
+  - `LOGO_HALF_W`/`LOGO_HALF_H` 从模块顶层 const 改为函数内 const（依赖 isMobile state）。`LOGO_WIDTH` 单一派生常量替代之前的 `CENTRAL_LOGO_WIDTH`。
+- `components/hero/hero.module.css`：
+  - `.scene` 加 `touch-action: pan-y`（最初用 `none`，见下方"踩到的坑"）。注释块记 WHY 和为什么不选 `none` / `manipulation`。
+- `app/globals.css`：
+  - `@media (max-width: 768px)` 块内追加 `.hero-3d-section { height: 85vh }` 和 `.hero-3d-section .scene { perspective: 900px }`。
+- **顺便 commit（pre-existing 修改）**：`app/layout.tsx` 加 `suppressHydrationWarning` 到 `<html>`（针对 Immersive Translate 浏览器扩展注入的 `data-immersive-translate-page-theme` 属性），`CLAUDE.md` 上一节 2026-06-09 About 改动记录。
+
+**踩到的坑**
+- **Hydration mismatch（最大坑）**：模块顶层 `const isMobile = matchMedia(...)` → SSR 永远 false → server 渲染 desktop → client hydrate 命中 mobile → 渲染 mobile → React 报 "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties"。console 还附带 Image 警告说 width/height modified（mobile `width:145` vs server `width:285`）。**修复**：useState 延迟判断 + 物理 useEffect deps 改 `[isMobile]`。**WHY 记下**：模块顶层不能用 `window` / `matchMedia` / `Date.now()` / `Math.random()` 这类 SSR/CSR 不一致的 API，client component 也一样要走 state/effect 延迟路径。
+- **`touch-action: none` 拦截上下滚动**：移动端最初版用 `touch-action: none` 让 scene 完全接管手势，但用户反馈"上下 swipe 卡"——browser scroll 也被吃掉了，要 swipe 到 hero 边界外才能滚。改为 `pan-y` 后保留 vertical scroll 给浏览器，pointer events 处理其他方向 + 触屏 tilt + tap stir。**WHY 记下**：mobile 场景里 `touch-action: none` 是"全场 sandbox"，要谨慎；`pan-y` / `pan-x` / `manipulation` 给浏览器留出该留的方向。
+- **CSS variable 方案未采用**：本来想用 CSS `clamp()` 让元素 width 响应式（避开 matchMedia 切换），但物理循环 11 个常量也得跟着 viewport 缩，纯 CSS variable 还得 JS 端 `getComputedStyle` 读 + `el.style.setProperty`，改完跟现在 matchMedia 方案复杂度一样。**结论**：matchMedia + state 在 React 里更直接，少一层"CSS → JS"反向通信。
+- **没做 3-agent perf review pass**：2026-06-04 / 06-05 / 06-08 三次都跑了并行 review。2026-06-26 没跑（用户没要求 + 改动主要是常量值替换、physics 逻辑结构没动）。**记下**：下次再有 3D 场景大改建议重跑 review pass。
+
+**部署**
+- 2 commit 顺序：
+  - `2f399be` "Adapt hero 3D scene for mobile (≤768px); suppress html hydration warning"
+  - `963ac8b` "Fix mobile hero swipe: touch-action pan-y instead of none"（部署后用户反馈"上下 swipe 卡"，诊断后改 touch-action 重新 commit）
+- 已 `git push origin main`。
+- ECS `C:\tomato-site` 部署步骤（无 `npm install`，因 `package.json` / 锁文件没变）：`git pull` → `npm run build` → `pm2 restart tomato-site` → `curl.exe -I http://127.0.0.1:3000` → `curl.exe -I https://tomatobrand.cn`。
+- 移动端验证：DevTools iPhone 12 Pro (390×844) 模拟 / 真机，开 `https://tomatobrand.cn`，确认 ① Console 没红字 hydration error ② 6 张浮动图不超过 viewport ③ 上下 swipe 顺畅出 hero ④ tap → stir 漩涡飞散 ⑤ 横向 swipe → tilt（不常见但能用）。
 
 ## 记忆提示（来自过往会话）
 

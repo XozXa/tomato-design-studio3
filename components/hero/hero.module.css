@@ -37,12 +37,21 @@
      near the element edge don't visibly snap mid-fade. */
   transition: filter 0.05s linear;
   pointer-events: auto;
+  /* shadcn base layer * { @apply border-border } adds 1px outline to every
+     element. The 1px line is invisible on a solid background but reads as
+     a hard rectangular frame around the transparent PNGs in the hero —
+     especially on mobile (375px viewport, 145-190px images). Same override
+     pattern as .team-layout in 2026-06-09. */
+  border: 0 !important;
+  outline: 0 !important;
 }
 
 .element img {
   display: block;
   width: 100%;
   height: auto;
+  border: 0 !important;
+  outline: 0 !important;
   /* slight dim on far-away elements, brighter on near */
   filter: drop-shadow(0 12px 24px rgba(60, 30, 10, 0.18));
   user-select: none;
@@ -74,6 +83,19 @@
 @keyframes logoBreathe {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.03); }
+}
+
+/* Mobile: drop-shadow distances (12px Y / 24px blur) are tuned for the
+   270-375px desktop images. On 145-190px mobile images they read as a
+   heavy rectangular halo that competes with the PNG itself — half them
+   in proportion. LOGO drop-shadow scales the same way. */
+@media (max-width: 768px) {
+  .element img {
+    filter: drop-shadow(0 4px 8px rgba(60, 30, 10, 0.12));
+  }
+  .logo img {
+    filter: drop-shadow(0 6px 12px rgba(60, 30, 10, 0.12));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
