@@ -6,6 +6,10 @@
   perspective: 1500px;
   perspective-origin: 50% 50%;
   background: #ffffff;
+  /* Mobile: hand the scene over to pointer events so pointermove / pointerdown
+     (used by the physics loop) aren't pre-empted by pan / scroll gestures.
+     The user exits the hero by scrolling from outside the scene. */
+  touch-action: none;
 }
 
 .world {

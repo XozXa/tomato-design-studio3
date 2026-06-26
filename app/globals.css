@@ -558,6 +558,14 @@ footer {
     max-width: 100%;
   }
 
+  .hero-3d-section {
+    height: 85vh;
+  }
+
+  .hero-3d-section .scene {
+    perspective: 900px;
+  }
+
   .geometric-accent-1 {
     width: 200px;
     height: 200px;

@@ -25,8 +25,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // suppressHydrationWarning on <html>: the "Immersive Translate" browser
+  // extension injects data-immersive-translate-page-theme into <html>, which
+  // the server doesn't emit — would otherwise trip a hydration mismatch.
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preload the LCP font; Noto Sans SC (17.7 MB) is intentionally NOT
             preloaded — its unicode-range gates it to CJK glyphs. */}

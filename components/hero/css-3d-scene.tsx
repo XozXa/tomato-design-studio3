@@ -1,57 +1,18 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { CENTRAL_LOGO_ASPECT, CENTRAL_LOGO_SRC, CENTRAL_LOGO_WIDTH, FLOATING_ITEMS } from "./floating-config"
+import {
+  CENTRAL_LOGO_ASPECT,
+  CENTRAL_LOGO_SRC,
+  DESKTOP_LOGO_WIDTH,
+  FLOATING_ITEMS,
+  MOBILE_FLOATING_ITEMS,
+  MOBILE_LOGO_WIDTH,
+} from "./floating-config"
 import styles from "./hero.module.css"
 
-const MAX_TILT_DEG = 8
-
-// Visual intensity halved 2026-06-08 — previous values (MAX_TILT_DEG=16,
-// MAX_SPEED=11, etc.) felt too jittery on first scroll past. Drift / wobble
-// amplitudes and RANDOM_PUSH scaled in proportion. Keep these in sync when
-// retuning; the 60Hz physics loop reads most of them.
-const BASE_DRIFT_FREQ_X = 0.00028
-const BASE_DRIFT_FREQ_Y = 0.00032
-const BASE_DRIFT_FREQ_Z = 0.00024
-const BASE_DRIFT_AMP_XY = 0.5
-const BASE_DRIFT_AMP_Z = 0.6
-const WOBBLE_FREQ = 0.0055
-const WOBBLE_AMP_XY = 0.25
-const WOBBLE_AMP_Z = 0.25
-const RANDOM_PUSH = 0.15
-const DAMPING = 0.94
-const MAX_SPEED = 6
-const EDGE_PAD = 200
-const HALF_Z = 300
-const XY_BOUNDARY_K = 0.06
-const Z_BOUNDARY_K = 0.15
-const Z_INDEX_BASE = 100
-
-const ORBIT_CW_K = 0.05
-const Z_FLOW = 0.05
-
-// Z-axis self-rotation only. Rotating around X or Y on flat PNGs flips them
-// edge-on to the camera and they disappear.
-const ROT_FREQ_Z = 0.00055
-const SPIN_AMP_Z = 0.35
-const ROT_SPRING_K = 0.025
-const COLLISION_SPIN_K = 0.5
-
-// Visual width is the full PNG box, but the tomato silhouette only fills
-// ~50-60% of that. A fraction-of-width collision body keeps 6 items from
-// constantly bumping.
-const RESTITUTION = 0.3
-const COLLISION_RADIUS_FACTOR = 0.3
-const LOGO_HALF_W = CENTRAL_LOGO_WIDTH / 2
-const LOGO_HALF_H = (CENTRAL_LOGO_WIDTH * CENTRAL_LOGO_ASPECT) / 2
-
-const SWIRL_KICK = 14
-const SWIRL_FALLOFF = 250
-const STIR_PULL = 0.004
-const STIR_DURATION_MS = 2000
-const TILT_EASE_K = 0.04
-const TILT_DEADBAND = 0.01
+const MQ_MOBILE = "(max-width: 768px)"
 interface Vec3 { x: number; y: number; z: number }
 interface Vec2 { x: number; y: number }
 interface State {
@@ -79,6 +40,63 @@ function clampAxis(val: number, velRef: Vec3, axis: "x" | "y" | "z", halfRange: 
 }
 
 export function Css3dScene() {
+  // SSR has no window, so the initial state is desktop. The mount effect
+  // re-reads matchMedia after hydration — if the user is actually on mobile
+  // React re-renders with mobile PARAMS / MOBILE_FLOATING_ITEMS, and the
+  // physics useEffect below (deps: [isMobile]) re-seeds states + restarts
+  // rAF. No hydration mismatch because SSR and first-paint client both
+  // render the desktop markup.
+  const [isMobile, setIsMobile] = useState(false)
+
+  // All physics / sizing constants derived from isMobile. Cheap to
+  // recompute each render (11 ternaries), keeps parity with module-level
+  // constants the rest of the file references.
+  const MAX_TILT_DEG        = isMobile ? 4   : 8
+  const BASE_DRIFT_FREQ_X   = 0.00028
+  const BASE_DRIFT_FREQ_Y   = 0.00032
+  const BASE_DRIFT_FREQ_Z   = 0.00024
+  const BASE_DRIFT_AMP_XY   = isMobile ? 0.25: 0.5
+  const BASE_DRIFT_AMP_Z    = isMobile ? 0.3 : 0.6
+  const WOBBLE_FREQ         = 0.0055
+  const WOBBLE_AMP_XY       = isMobile ? 0.12: 0.25
+  const WOBBLE_AMP_Z        = isMobile ? 0.12: 0.25
+  const RANDOM_PUSH         = isMobile ? 0.08: 0.15
+  const DAMPING             = 0.94
+  const MAX_SPEED           = isMobile ? 3   : 6
+  const EDGE_PAD            = isMobile ? 60  : 200
+  const HALF_Z              = isMobile ? 200 : 300
+  const XY_BOUNDARY_K       = 0.06
+  const Z_BOUNDARY_K        = 0.15
+  const Z_INDEX_BASE        = 100
+  const INIT_JITTER_XY      = isMobile ? 30  : 70
+  const INIT_JITTER_Z       = isMobile ? 80  : 150
+
+  const ORBIT_CW_K = 0.05
+  const Z_FLOW = 0.05
+
+  // Z-axis self-rotation only. Rotating around X or Y on flat PNGs flips
+  // them edge-on to the camera and they disappear.
+  const ROT_FREQ_Z = 0.00055
+  const SPIN_AMP_Z = 0.35
+  const ROT_SPRING_K = 0.025
+  const COLLISION_SPIN_K = 0.5
+
+  // Visual width is the full PNG box, but the tomato silhouette only fills
+  // ~50-60% of that. A fraction-of-width collision body keeps 6 items from
+  // constantly bumping.
+  const RESTITUTION = 0.3
+  const COLLISION_RADIUS_FACTOR = 0.3
+  const LOGO_WIDTH     = isMobile ? MOBILE_LOGO_WIDTH : DESKTOP_LOGO_WIDTH
+  const LOGO_HALF_W    = LOGO_WIDTH / 2
+  const LOGO_HALF_H    = (LOGO_WIDTH * CENTRAL_LOGO_ASPECT) / 2
+
+  const SWIRL_KICK        = isMobile ? 8 : 14
+  const SWIRL_FALLOFF     = 250
+  const STIR_PULL         = 0.004
+  const STIR_DURATION_MS  = 2000
+  const TILT_EASE_K       = isMobile ? 0.025 : 0.04
+  const TILT_DEADBAND     = 0.01
+
   const sceneRef = useRef<HTMLDivElement>(null)
   const worldRef = useRef<HTMLDivElement>(null)
   const statesRef = useRef<State[]>([])
@@ -90,17 +108,24 @@ export function Css3dScene() {
   const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
+    setIsMobile(window.matchMedia(MQ_MOBILE).matches)
+  }, [])
+
+  useEffect(() => {
     const world = worldRef.current
     const scene = sceneRef.current
     if (!world || !scene) return
 
     // Seed states up front so the reduced-motion branch below can paint.
-    statesRef.current = FLOATING_ITEMS.map((item) => {
-      const initZ = (Math.random() - 0.5) * 300
+    // Mobile (≤768px) uses the tighter MOBILE_FLOATING_ITEMS — same x/y/z/rot
+    // proportions at ~0.5× width, so visual balance survives the resize.
+    const items = isMobile ? MOBILE_FLOATING_ITEMS : FLOATING_ITEMS
+    statesRef.current = items.map((item) => {
+      const initZ = (Math.random() - 0.5) * 2 * INIT_JITTER_Z
       return {
         pos: {
-          x: item.x + (Math.random() - 0.5) * 140,
-          y: item.y + (Math.random() - 0.5) * 140,
+          x: item.x + (Math.random() - 0.5) * 2 * INIT_JITTER_XY,
+          y: item.y + (Math.random() - 0.5) * 2 * INIT_JITTER_XY,
           z: initZ,
         },
         vel: {
@@ -126,7 +151,7 @@ export function Css3dScene() {
     // Children order: 6 floating items first, then the central LOGO. The
     // physics loop only touches indices 0..N-1.
     const children = Array.from(world.children) as HTMLDivElement[]
-    for (let i = 0; i < FLOATING_ITEMS.length; i++) {
+    for (let i = 0; i < items.length; i++) {
       statesRef.current[i].el = children[i] ?? null
     }
 
@@ -171,12 +196,13 @@ export function Css3dScene() {
     ro.observe(scene)
     refreshRect()
 
-    const onMove = (e: MouseEvent) => {
-      const nx = ((e.clientX - dims.left) / dims.w) * 2 - 1
-      const ny = ((e.clientY - dims.top) / dims.h) * 2 - 1
+    const updateTilt = (clientX: number, clientY: number) => {
+      const nx = ((clientX - dims.left) / dims.w) * 2 - 1
+      const ny = ((clientY - dims.top) / dims.h) * 2 - 1
       tiltTargetRef.current.x = nx
       tiltTargetRef.current.y = ny
     }
+    const onMove = (e: MouseEvent) => updateTilt(e.clientX, e.clientY)
     const onLeave = () => {
       tiltTargetRef.current.x = 0
       tiltTargetRef.current.y = 0
@@ -184,10 +210,10 @@ export function Css3dScene() {
 
     // Click = "stir the water": tangential impulse around the click point
     // (falls off with distance) + Z spin kick. Z-axis only — see top of file.
-    const onClick = (e: MouseEvent) => {
+    const triggerStir = (clientX: number, clientY: number) => {
       const clickPos = {
-        x: e.clientX - dims.left - dims.w / 2,
-        y: e.clientY - dims.top - dims.h / 2,
+        x: clientX - dims.left - dims.w / 2,
+        y: clientY - dims.top - dims.h / 2,
       }
 
       for (const s of statesRef.current) {
@@ -206,6 +232,21 @@ export function Css3dScene() {
       attractorRef.current = clickPos
       stirStartRef.current = performance.now()
       modeRef.current = "stir"
+    }
+    const onClick = (e: MouseEvent) => triggerStir(e.clientX, e.clientY)
+
+    // Pointer events fire for both mouse and touch, so mobile users get
+    // tilt-on-drag + tap-to-stir without needing parallel touchstart handlers.
+    // setPointerCapture keeps the gesture tracked if the finger drifts past
+    // the scene edge mid-drag.
+    const onPointerMove = (e: PointerEvent) => updateTilt(e.clientX, e.clientY)
+    const onPointerDown = (e: PointerEvent) => {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+      triggerStir(e.clientX, e.clientY)
+    }
+    const onPointerLeave = () => {
+      tiltTargetRef.current.x = 0
+      tiltTargetRef.current.y = 0
     }
 
     let lastTiltX = 0
@@ -395,6 +436,9 @@ export function Css3dScene() {
     scene.addEventListener("mousemove", onMove, { passive: true })
     scene.addEventListener("mouseleave", onLeave)
     scene.addEventListener("click", onClick)
+    scene.addEventListener("pointermove", onPointerMove, { passive: true })
+    scene.addEventListener("pointerdown", onPointerDown)
+    scene.addEventListener("pointerleave", onPointerLeave)
     document.addEventListener("visibilitychange", onVisibility)
 
     // Reset tilt and pause the rAF physics loop when the scene scrolls out
@@ -422,14 +466,17 @@ export function Css3dScene() {
       scene.removeEventListener("mousemove", onMove)
       scene.removeEventListener("mouseleave", onLeave)
       scene.removeEventListener("click", onClick)
+      scene.removeEventListener("pointermove", onPointerMove)
+      scene.removeEventListener("pointerdown", onPointerDown)
+      scene.removeEventListener("pointerleave", onPointerLeave)
       document.removeEventListener("visibilitychange", onVisibility)
     }
-  }, [])
+  }, [isMobile])
 
   return (
     <div ref={sceneRef} className={styles.scene}>
       <div ref={worldRef} className={styles.world}>
-        {FLOATING_ITEMS.map((item) => (
+        {(isMobile ? MOBILE_FLOATING_ITEMS : FLOATING_ITEMS).map((item) => (
           <div
             key={item.id}
             className={styles.element}
@@ -453,15 +500,15 @@ export function Css3dScene() {
         <div
           className={styles.element}
           style={{
-            width: `${CENTRAL_LOGO_WIDTH}px`,
+            width: `${LOGO_WIDTH}px`,
             zIndex: Z_INDEX_BASE,
           }}
         >
           <Image
             src={CENTRAL_LOGO_SRC}
             alt="Tomato Design"
-            width={CENTRAL_LOGO_WIDTH}
-            height={Math.round(CENTRAL_LOGO_WIDTH * CENTRAL_LOGO_ASPECT)}
+            width={LOGO_WIDTH}
+            height={Math.round(LOGO_WIDTH * CENTRAL_LOGO_ASPECT)}
             priority
             draggable={false}
             className={styles.logo}

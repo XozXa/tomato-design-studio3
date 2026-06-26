@@ -424,6 +424,44 @@ pm2 restart tomato-site
   2. `del start.bat`（CLAUDE.md 已知是 Node 解析失败的废包装）。
   3. 证书 2026-09-03 到期续期 + 合并双域名证书。
 
+## 2026-06-09 改动记录（About 重做）
+
+commit `0fdffe0`，6 文件改 / 新增 1 文件。**未**部署到 ECS。
+
+**功能 / 内容**
+- **About 页面顶部新增 `AboutIntroSection`**（`components/sections/about-intro-section.tsx`）—— 5 段中文独立段落：Tomato Design 名字起源、协同方式、年轻化策略、设计哲学。`<h2>About</h2>`（继承 `section-title` 风格 = `ABOUT` 大写粗体紧凑字距）。
+- **About 页面 section 顺序**：`About → Core Team → Services → Process → Footer`（`app/about/page.tsx`）。原来是 `Services → Process → Team → Footer`。
+- **Services 4 张卡片**（`components/sections/services-section.tsx`）—— 改成数据驱动 `SERVICES` const array，4 张卡片从"段落描述"改成 4 行 bullet 列表，标题保留 `品牌设计 / Brand Design` 等双语：
+  - 品牌设计：品牌视觉搭建 / 品牌LOGO设计 / VI视觉识别系统 / 动态设计
+  - 包装设计：产品包装设计 / 产品外观设计 / 包装建模渲染 / 包装插画设计
+  - IP 设计：IP形象设计 / IP服装动作场景延展 / IP建模渲染 / IP应用物料延展
+  - 活动视觉：主kv设计 / 插画设计 / 电商设计 / 运营海报
+- **Process 3 阶段**（`components/sections/process-section.tsx`）—— 同样数据驱动 `PROCESS` const array，bullet 列表（前期沟通 4 项 / 中期设计 5 项 / 后期交付 5 项）。
+- **Team section**（`components/sections/team-section.tsx`）—— 新增 intro 段落："我们是一个年轻的团队，由两位性格迥异但都对生活充满热爱的主理人带领..."。CC / Leo 卡片描述 `<p class="feature-desc">` 删英文翻译，保留中文。卡片标题里的英文小字（Studio Manager / Design Partner）保留。
+
+**架构 / 重构**
+- **三个 section 标题简化**：`<h2 class="section-title">中文<span class="bilingual-en">English</span></h2>` → `<h2>English</h2>`。只保留 `Services` / `Process` / `Core Team` 英文。
+- **三个 section 的 `section-intro` 双语段落全删**（之前 services / process / team 各有一段中文 + 英文长 intro）。
+- **`.section-title` 字体风格对齐 `.footer-cta`**（`app/globals.css`）—— `font-weight: 400 → 800` / `letter-spacing: -1.5px → -2px` / 加 `text-transform: uppercase`。font-size 56px 保留（section title 视觉权重比 footer-cta 大）。最终标题显示成 `CORE TEAM` / `SERVICES` / `PROCESS` 大写粗体紧凑字距。
+- **`.section-header` 改 1 列布局**（`grid-template-columns: 2fr 1fr → 1fr` / `gap: 60px → 24px`）—— 标题在上、intro 在下。删 `section-header` 内部的中文 + 英文双语副标题 span 结构。
+- **Team section 重新组织成 2×2 网格**（`app/globals.css` `.team-layout`）—— 4 个独立子元素（h2 / intro / CC / Leo）直接挂 `.team-layout` 下，用 `grid-template-areas: "title title" / "intro intro" / "cc leo"` 锁 2 列布局：
+  - row 1: 标题跨整行（col 1 + col 2）
+  - row 2: intro 段跨整行
+  - row 3: CC 在 col 1、Leo 在 col 2（**横排各 50% 宽**）
+  - 早期试过 `.team-members` 嵌套 wrapper + 2 列 grid 让 CC / Leo 各 25% 宽（**太挤**）；试过 padding-top: 86px 让 CC 顶部对齐 intro（**改用 grid-template-areas 后不需要 padding**）；试过 `border-top: 1px solid` 加视觉横线（用户嫌"不好看"撤掉）；最终定稿用 `grid-template-areas` + `gap: 80px 80px`。
+- **新 `.section-intro p` 段落间距**（`app/globals.css`）—— `.section-intro` 容器内嵌套多个 `<p>` 时 `margin: 0 0 1em 0`，最后一段 `margin-bottom: 0`。给 `AboutIntroSection` 用。
+- **新 `.feature-list` 样式**（`app/globals.css`）—— `list-style: none` / `text-align: center` / `font-size: 15px` / `line-height: 2.2`。给 services / process 的 bullet 列表用。
+- **mobile override** 同步：`@media (max-width: 768px)` 里 `.team-layout` 改 1 列 + 4 行 `grid-template-areas: "title" "intro" "cc" "leo"`，所有子元素垂直堆叠。
+
+**踩到的坑**
+- **JS 字符串含 ASCII 双引号打断**：`AboutIntroSection` 第 2-5 段中文里有 `"爆浆"` / `"年轻基因"` / `"策略"` 三个全角 `""` 词组。第一次用 ASCII 双引号 `""` 包 JS 字符串时把字符串打断（`tsc` 报 `TS1005: ',' expected`）。**解决**：含 ASCII `"` 的字符串换成反引号（模板字符串）包裹。中文字符本身的全角 `""` 跟 ASCII `"` 字符不同，不会打断。
+- **用户 `::before` 装饰先加再删**：Services section 起初加 `::before` 红方块（`var(--accent)` = `#ff3e00`，14×14 px 在标题前左上角），用户嫌"不好看"撤掉；之后用户又让换成 `/下载/tomato (2).svg`（番茄 + 蒂 SVG），复制到 `public/tomato-icon.svg`；用户又说"都删掉" —— `.feature-card::before` 整块规则删掉，`public/tomato-icon.svg` 删掉。
+- **Team 布局反复调**：用户对"CC / Leo 横排 vs 竖排 / 标题 + intro 上下 vs 左右 / 2×2 网格对齐"等需求多次反复。最终用 `grid-template-areas` 4 子元素独立 grid 锁布局。
+- **`shadcn base layer * { @apply border-border }` 残留 1px 边框**：用户在 Team section intro 段下方看到两条紧挨的横线，其实是 shadcn 主题在 `*` 上 `@apply border-border`（`--border: oklch(0.922 0 0)` 浅灰）给所有元素加的 1px 边框。`.team-layout > * { border-top: none !important; border-bottom: none !important; }` 强制覆盖。**WHY 记下**：shadcn base layer `*` 规则会传染到所有元素，自定义 layout 时要主动 override。
+
+**部署**
+- `0fdffe0` 已 `git push origin main`，**未**部署到 ECS。要部署按既定流程：`cd C:\tomato-site && git pull && npm run build && pm2 restart tomato-site`。
+
 ## 记忆提示（来自过往会话）
 
 - 截图→代码的克隆任务，图片分析优先用 **M3（MiniMax-M3）** —— 它做穷举式枚举，而 Claude 原生视觉偏总结式。详见 `feedback_m3_for_clone_tasks.md`，适用于 `ai-website-cloner-template/` 流水线。
