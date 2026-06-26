@@ -496,6 +496,14 @@ footer {
   font-weight: 500;
 }
 
+/* Value column was previously right-aligned via a `text-right` wrapper
+   div that we removed in the mobile refactor; promote that to the <ul>
+   itself so desktop layout is unchanged. The mobile block overrides
+   per-<li> alignment. */
+.social-values {
+  text-align: right;
+}
+
 ::-webkit-scrollbar {
   width: 5px;
 }
@@ -601,17 +609,41 @@ footer {
 
   /* Mobile footer */
   .footer-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
+    grid-template-columns: auto 1fr;
+    column-gap: 20px;
+    row-gap: 12px;
   }
+  /* CTA cell spans both columns */
+  .footer-cta-cell {
+    grid-column: 1 / -1;
+    margin-bottom: 20px;
+  }
+  /* The two <ul>s use display:contents so their 4 <li>s become direct
+     grid items of .footer-grid. Each pair of label/value <li>s is
+     locked to the same grid row via nth-child so they sit on the
+     same line — e.g. EMAIL (row 2, col 1) next to the email address
+     (row 2, col 2). Works on iOS 15+ without relying on subgrid. */
+  .social-list {
+    display: contents;
+  }
+  .social-labels li {
+    grid-column: 1;
+  }
+  .social-values li {
+    grid-column: 2;
+  }
+  .social-labels li:nth-child(1),
+  .social-values li:nth-child(1) { grid-row: 2; }
+  .social-labels li:nth-child(2),
+  .social-values li:nth-child(2) { grid-row: 3; }
+  .social-labels li:nth-child(3),
+  .social-values li:nth-child(3) { grid-row: 4; }
+  .social-labels li:nth-child(4),
+  .social-values li:nth-child(4) { grid-row: 5; }
 
   .footer-cta {
     font-size: 32px;
     letter-spacing: -2px;
-  }
-
-  footer > div:last-child {
-    text-align: left !important;
   }
 }
 

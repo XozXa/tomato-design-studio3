@@ -14,57 +14,53 @@ export default function FooterSection() {
   return (
     <footer id="contact" className="footer">
       <div className="footer-grid">
-        <div>
+        <div className="footer-cta-cell">
           <div className="footer-cta">
             LET&apos;S CREATE SOMETHING BOLD TOGETHER
           </div>
         </div>
-        <div>
-          <ul className="social-list">
-            <li>
-              <a href="#">EMAIL</a>
-            </li>
-            <li>
-              <a href="#">WECHAT</a>
-            </li>
-            <li>
-              <a
-                href={XHS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="project-title"
-                data-text="RED"
-                onMouseEnter={handleDistortEnter}
-                onMouseLeave={handleDistortLeave}
-              >
-                RED
-              </a>
-            </li>
-            <li>
-              <a href="#">LOCATION</a>
-            </li>
-          </ul>
-        </div>
-        <div className="social-list text-right">
-          <ul>
-            <li>tomatodesign2025@163.com</li>
-            <li>Tomato9467</li>
-            <li>
-              <a
-                href={XHS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="project-title"
-                data-text="Tomato Design"
-                onMouseEnter={handleDistortEnter}
-                onMouseLeave={handleDistortLeave}
-              >
-                Tomato Design
-              </a>
-            </li>
-            <li>Chengdu, China</li>
-          </ul>
-        </div>
+        <ul className="social-list social-labels">
+          <li>
+            <a href="#">EMAIL</a>
+          </li>
+          <li>
+            <a href="#">WECHAT</a>
+          </li>
+          <li>
+            <a
+              href={XHS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="project-title"
+              data-text="RED"
+              onMouseEnter={handleDistortEnter}
+              onMouseLeave={handleDistortLeave}
+            >
+              RED
+            </a>
+          </li>
+          <li>
+            <a href="#">LOCATION</a>
+          </li>
+        </ul>
+        <ul className="social-list social-values">
+          <li>tomatodesign2025@163.com</li>
+          <li>Tomato9467</li>
+          <li>
+            <a
+              href={XHS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="project-title"
+              data-text="Tomato Design"
+              onMouseEnter={handleDistortEnter}
+              onMouseLeave={handleDistortLeave}
+            >
+              Tomato Design
+            </a>
+          </li>
+          <li>Chengdu, China</li>
+        </ul>
       </div>
     </footer>
   )
