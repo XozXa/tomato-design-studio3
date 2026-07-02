@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Css3dScene } from "@/components/hero/css-3d-scene"
 import Navbar from "@/components/navbar"
 import FooterSection from "@/components/sections/footer-section"
+import { trackEvent } from "@/lib/analytics"
 
 const PROJECTS = [
   { id: "p1", src: "/1.png", alt: "Project 01" },
@@ -21,6 +22,8 @@ const PROJECTS = [
   { id: "p12", src: "/12.png", alt: "Project 12" },
   { id: "p13", src: "/13.png", alt: "Project 13" },
   { id: "p14", src: "/14.png", alt: "Project 14" },
+  { id: "p15", src: "/15.png", alt: "Project 15" },
+  { id: "p16", src: "/16.png", alt: "Project 16" },
 ] as const
 
 export default function Page() {
@@ -51,7 +54,13 @@ export default function Page() {
         <div className="portfolio-wrapper">
           <div className="portfolio-grid">
             {PROJECTS.map((p) => (
-              <Link key={p.id} href={`/projects/${p.id}`} className="project-card" id={p.id}>
+              <Link
+                key={p.id}
+                href={`/projects/${p.id}`}
+                className="project-card"
+                id={p.id}
+                onClick={() => trackEvent("Portfolio", "click", p.id)}
+              >
                 <Image src={p.src} alt={p.alt} className="project-image" width={400} height={400} sizes="25vw" loading="lazy" />
               </Link>
             ))}

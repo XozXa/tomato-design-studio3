@@ -402,6 +402,61 @@ const projects: Project[] = [
       ],
     },
   },
+  {
+    id: "p15",
+    brand: "Furora弗若",
+    meta: {
+      service: "品牌全案设计",
+      date: "",
+      industry: "宠物用品",
+    },
+    description:
+      'Furora弗若是一家宠物生活方式品牌，主理人希望弗若能为毛孩子带来温暖光芒，因此我们将"家"定义为不仅是物理意义上的居所，更是人宠之间情感交融的避风港。在弗若的世界里，家不是冰冷的钢筋水泥，而是充满色彩、自由与包容的心灵栖息地。我们将"可爱温馨的小房子"提炼为品牌的辅助图形，无论是在产品包装、手提袋还是线下门店的门头设计中，都可以不断强化"家"的核心概念。鼓励宠物在家中释放天性，正如小狗 Roro 踩滑板、自拍的活泼模样，我们希望每一个来到弗若的生命都能感受到无拘无束的快乐。',
+    descriptionEn:
+      'Furora is a pet lifestyle brand. The founder hopes Furora can bring warm light to their fur kids, so we defined "home" as more than a physical dwelling — it\'s an emotional harbor where humans and pets share warmth. In Furora\'s world, home isn\'t cold concrete, but a colorful, free, and inclusive soul habitat. We distilled the "cute cozy little house" into the brand\'s auxiliary graphic, reinforcing the core concept of "home" across product packaging, paper bags, and storefront signage. We encourage pets to be themselves at home — just like the dog Roro skateboarding and taking selfies, we hope every creature that comes to Furora feels the joy of being unconstrained.',
+    assets: {
+      header: "/projects/p15/header.png",
+      attached: [],
+      gallery: [
+        "/projects/p15/p15-02.png",
+        "/projects/p15/p15-03.png",
+        "/projects/p15/p15-04.png",
+        "/projects/p15/p15-05.png",
+        "/projects/p15/p15-06.png",
+        "/projects/p15/p15-07.png",
+        "/projects/p15/p15-08.png",
+        "/projects/p15/p15-10.png",
+        "/projects/p15/p15-11.png",
+        "/projects/p15/p15-12.png",
+      ],
+    },
+  },
+  {
+    id: "p16",
+    brand: "Euphor",
+    meta: {
+      service: "品牌全案设计",
+      date: "",
+      industry: "家居用品",
+    },
+    description:
+      'Euphor是一家家居品牌集合店，我们在为Euphor 的设计视觉语言选择了一种"反叛"的姿态。Euphor 的视觉基底由最纯粹的红、黄、蓝三原色构成。它们以最直接、最原始的姿态碰撞，这种色彩策略是情绪的具象化，大面积的色块在粗糙的质感中相互交织，将高饱和的色彩沉淀为一种具有呼吸感的艺术表达。用粗糙的线条对抗精致，用原色的碰撞对抗平庸，用手绘的温度对抗冷漠。在 Euphor 的世界里，多巴胺不是一种浮夸的潮流，而是一种可以被触摸、被感受、被生活化的真实情绪。这种拙感，正是我们对"悦己"最诚恳的表达。',
+    descriptionEn:
+      'Euphor is a multi-brand home goods store. We chose a "rebellious" stance for Euphor\'s visual language. Euphor\'s visual foundation consists of the purest red, yellow, and blue primaries. They collide in their most direct, primitive form — this color strategy externalizes emotion; large color blocks interweave within rough textures, settling the high-saturation colors into an artistic expression that breathes. Rough lines counter refinement, primary-color collisions counter the ordinary, the warmth of hand-drawn marks counters indifference. In Euphor\'s world, dopamine isn\'t a flashy trend but a real emotion that can be touched, felt, and lived. This clumsiness is our most sincere expression of "pleasing oneself."',
+    assets: {
+      header: "/projects/p16/header.png",
+      attached: [],
+      gallery: [
+        "/projects/p16/p16-02.png",
+        "/projects/p16/p16-03.png",
+        "/projects/p16/p16-05.png",
+        "/projects/p16/p16-04.png",
+        "/projects/p16/p16-06.png",
+        "/projects/p16/p16-07.png",
+        "/projects/p16/p16-08.png",
+      ],
+    },
+  },
 ]
 
 export { projects }

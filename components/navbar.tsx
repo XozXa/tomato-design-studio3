@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { trackEvent } from "@/lib/analytics"
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -25,7 +26,7 @@ export default function Navbar() {
       <div className="nav-links">
         <Link href="/">Work</Link>
         <Link href="/about">About</Link>
-        <a href="#contact">Contact</a>
+        <a href="#contact" onClick={() => trackEvent("Nav", "contact_click")}>Contact</a>
       </div>
       <div className="nav-back-spacer" />
     </nav>

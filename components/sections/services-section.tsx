@@ -25,6 +25,8 @@ const SERVICES = [
   },
 ] as const
 
+import ServiceViewTracker from "@/components/sections/service-view-tracker"
+
 export default function ServicesSection() {
   return (
     <section id="services" className="section-block">
@@ -47,6 +49,7 @@ export default function ServicesSection() {
           </div>
         ))}
       </div>
+      <ServiceViewTracker />
     </section>
   )
 }

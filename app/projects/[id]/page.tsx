@@ -3,9 +3,15 @@ import Image from "next/image"
 import Navbar from "@/components/navbar"
 import FooterSection from "@/components/sections/footer-section"
 import { FadeIn } from "@/components/fade-in"
+import CasePageTracker from "@/components/case-page-tracker"
 import { getProjectById, projects } from "@/data/projects"
 
 type Props = { params: Promise<{ id: string }> }
+
+// 单图整行铺满的 gallery 图片路径集合（portrait 排版不希望被 2 列裁窄）
+const FULL_WIDTH_GALLERY: ReadonlySet<string> = new Set([
+  "/projects/p16/p16-05.png",
+])
 
 export async function generateStaticParams() {
   return projects.map((p) => ({ id: p.id }))
@@ -29,6 +35,7 @@ export default async function ProjectPage({ params }: Props) {
 
       {project ? (
         <article className="project-detail">
+          <CasePageTracker projectId={project.id} />
           <FadeIn variant="hero">
             <Image
               src={project.assets.header}
@@ -86,7 +93,10 @@ export default async function ProjectPage({ params }: Props) {
 
           <div className="detail-images-grid">
             {project.assets.gallery.map((src, i) => (
-              <FadeIn key={src}>
+              <FadeIn
+                key={src}
+                className={FULL_WIDTH_GALLERY.has(src) ? "detail-gallery-item--full" : undefined}
+              >
                 <Image
                   src={src}
                   alt={`${project.brand} ${i + 1}`}

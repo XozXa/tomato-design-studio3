@@ -363,13 +363,11 @@ nav + * {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%);
   transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0.9;
 }
 
 .project-card:hover .project-image {
-  filter: grayscale(0%);
   transform: scale(1.05);
   opacity: 1;
 }
@@ -488,12 +486,24 @@ footer {
   margin-bottom: 10px;
 }
 
-.social-list a {
+.social-list a,
+.social-list span {
   text-decoration: none;
   color: var(--primary);
   text-transform: uppercase;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* `.project-title` is a global rule sized for portfolio cards (48px / 800
+   weight / display block); in the footer it lives inside .social-list and
+   must match the surrounding labels instead. */
+.social-list .project-title {
+  font-size: 14px;
+  font-weight: 500;
+  display: inline;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 /* Value column was previously right-aligned via a `text-right` wrapper
@@ -502,6 +512,66 @@ footer {
    per-<li> alignment. */
 .social-values {
   text-align: right;
+}
+
+.copyright {
+  margin-top: 80px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--muted-foreground);
+}
+
+.copy-btn {
+  position: relative;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.copy-btn:hover {
+  opacity: 0.6;
+}
+
+.copy-btn:focus-visible {
+  outline: 1px dashed currentColor;
+  outline-offset: 4px;
+}
+
+.copy-float-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  z-index: 9999;
+  background: #000;
+  color: #fff;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  animation: copyFloatToastIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes copyFloatToastIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -941,6 +1011,10 @@ footer {
   column-gap: 10px;
   row-gap: 15px;
   width: 100%;
+}
+
+.detail-images-grid > .detail-gallery-item--full {
+  grid-column: 1 / -1;
 }
 
 .coming-soon {

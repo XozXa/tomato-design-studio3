@@ -1,7 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Analytics } from "@vercel/analytics/next"
+import Script from "next/script"
 import ScrollToTop from "@/components/scroll-to-top"
+import RouteChangeTracker from "@/components/route-change-tracker"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
 }
+
+const BAIDU_TONGJI_ID = process.env.NEXT_PUBLIC_BAIDU_TONGJI_ID
 
 export default function RootLayout({
   children,
@@ -45,7 +48,14 @@ export default function RootLayout({
         <div className="grid-overlay"></div>
         <ScrollToTop />
         {children}
-        <Analytics />
+        <RouteChangeTracker />
+        {BAIDU_TONGJI_ID && (
+          <Script
+            id="baidu-tongji"
+            strategy="afterInteractive"
+            src={`https://hm.baidu.com/hm.js?${BAIDU_TONGJI_ID}`}
+          />
+        )}
       </body>
     </html>
   )
